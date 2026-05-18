@@ -152,7 +152,7 @@ python main.py
 
 ### mail server nodes
 
-to purchase a dedicated mail server node for cheaper token generation: (beta)
+to purchase a dedicated mail server node for unflagged token generation & avoid term waves: (beta)
 
 * [discord.gg/cyberbeach](https://discord.gg/cyberbeach)
 

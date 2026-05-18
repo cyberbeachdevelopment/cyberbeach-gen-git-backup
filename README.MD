@@ -3,6 +3,10 @@ v1.01
 
 [cyberbeach.cc](https://cyberbeach.cc) & [discord.gg/cyberbeach](https://discord.gg/cyberbeach)
 
+## disclaimer
+
+for educational and research purposes only. users are responsible for how they use this.
+
 ## preview
 
 [watch preview video](https://videy.co/v/?id=e8thddEX1)
@@ -162,9 +166,3 @@ to buy solver credits for rezosolver:
 
 * [huzaif.online](https://huzaif.online/)
   (sign up required, crypto accepted)
-
----
-
-## disclaimer
-
-for educational and research purposes only. users are responsible for how they use this.

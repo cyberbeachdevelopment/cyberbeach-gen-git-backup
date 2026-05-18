@@ -175,19 +175,32 @@ _last = 0
 def update_title(title=None, delay=0.5):
     if title is None:
         title = f"🌊 v={__version__}"
+
     global _last
     now = time.time()
 
     if now - _last > delay:
-        elapsed = now - START_TIME
-        #cpm = int(STATS["rate"] / elapsed * 60) if elapsed > 0 else 0
+        #elapsed = now - START_TIME
         cpm = get_cpm()
+
+        total = (
+            STATS["unlocked"] +
+            STATS["locked"] +
+            STATS["invalid"]
+        )
+
+        # unlocked increases %, locked/invalid decrease it
+        rate_percent = (
+            (STATS["unlocked"] / total) * 100
+            if total > 0 else 0
+        )
 
         t = (
             f"{title} | "
             f"unlocked={STATS['unlocked']} "
             f"locked={STATS['locked']} "
             f"invalid={STATS['invalid']} "
+            f"rate={rate_percent:.1f}% "
             f"error={STATS['error']} "
             f"cpm={cpm}"
         )

@@ -1,6 +1,8 @@
 # 🌊 cyberbeach x rezosolver
 v1.01
 
+intrested in making a tool? contact us and recieve fair prices! no questions asked.
+
 [cyberbeach.cc](https://cyberbeach.cc) & [discord.gg/cyberbeach](https://discord.gg/cyberbeach)
 
 ## disclaimer

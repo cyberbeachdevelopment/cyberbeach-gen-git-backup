@@ -6,7 +6,7 @@ intrested in making a tool? contact us and recieve fair prices! no questions ask
 [cyberbeach.cc](https://cyberbeach.cc) & [discord.gg/cyberbeach](https://discord.gg/cyberbeach)
 
 ## target [⭐]
-adding phone-verification at **10 starts**
+adding phone-verification at **10 stars**
 
 ## disclaimer
 

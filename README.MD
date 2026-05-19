@@ -5,6 +5,9 @@ intrested in making a tool? contact us and recieve fair prices! no questions ask
 
 [cyberbeach.cc](https://cyberbeach.cc) & [discord.gg/cyberbeach](https://discord.gg/cyberbeach)
 
+## target [⭐]
+* adding phone-verification at **10 starts**
+
 ## disclaimer
 
 for educational and research purposes only. users are responsible for how they use this.

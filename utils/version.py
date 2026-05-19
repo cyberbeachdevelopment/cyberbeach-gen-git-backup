@@ -1,3 +1,3 @@
 # cyberbeach.cc & discord.gg/cyberbeach
 
-__version__ = "1.01"
+__version__ = "1.02"

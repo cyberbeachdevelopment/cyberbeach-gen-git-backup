@@ -56,6 +56,7 @@ def build_super_properties(build_number):
 
 def fetch_cookies(session):
     session.get("https://discord.com")
+
     cookies = session.cookies.get_dict()
     dcfduid = cookies.get("__dcfduid")
     sdcfduid = cookies.get("__sdcfduid")
@@ -68,7 +69,11 @@ def get_fingerprint(session, dcfduid, sdcfduid):
         "accept-encoding": "gzip, deflate, br",
         "accept-language": "en-US,en;q=0.9",
         "cookie": f"__dcfduid={dcfduid}; __sdcfduid={sdcfduid};",
-        "sec-ch-ua": f'"Chromium";v="{CHROME_VERSION}", "Google Chrome";v="{CHROME_VERSION}", "Not-A.Brand";v="99"',
+        "sec-ch-ua": (
+            f'"Chromium";v="{CHROME_VERSION}", '
+            f'"Google Chrome";v="{CHROME_VERSION}", '
+            f'"Not-A.Brand";v="99"'
+        ),
         "sec-ch-ua-mobile": "?0",
         "sec-ch-ua-platform": '"Windows"',
         "sec-fetch-dest": "document",
@@ -76,14 +81,26 @@ def get_fingerprint(session, dcfduid, sdcfduid):
         "sec-fetch-site": "none",
         "sec-fetch-user": "?1",
         "upgrade-insecure-requests": "1",
-        "user-agent": USER_AGENT
+        "user-agent": USER_AGENT,
     }
     session.headers = headers
-    data = session.get("https://discord.com/api/v9/experiments")
+
+    res = session.get("https://discord.com/api/v9/experiments")
+
+    if res.status_code != 200:
+        raise RuntimeError(
+            f"experiments returned status={res.status_code} body={res.text[:200]}"
+        )
+
     try:
-        return data.json().get("fingerprint")
-    except Exception:
-        return None
+        fp = res.json().get("fingerprint")
+    except ValueError as e:
+        raise RuntimeError(f"experiments non-json body={res.text[:200]}") from e
+
+    if not fp:
+        raise RuntimeError(f"experiments missing fingerprint field body={res.text[:200]}")
+
+    return fp
 
 
 def build_headers(fingerprint, super_props):

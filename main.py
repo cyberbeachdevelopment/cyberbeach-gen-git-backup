@@ -57,7 +57,7 @@ def check_structure():
     "data": {
         "rezosolver_api_key": "",
         "anysolver_api_key": "",
-        "razorcap_api_key": ""
+        "voidsolver_api_key": ""
     },
 
     "verification": {
@@ -65,7 +65,10 @@ def check_structure():
     },
 
     "customise": {
-        "hypesquad": true
+        "hypesquad": true,
+        "pfp": true,
+        "bio": true,
+        "status": true
     },
 
     "mail": {
@@ -230,6 +233,9 @@ async def main():
     NUM_THREADS = config.get("threads", 10)
     semaphore = asyncio.Semaphore(NUM_THREADS)
 
+    # customise toggles (pfp / bio / status / hypesquad)
+    customise_cfg = config.get("customise", {}) or {}
+
     # for title
     threading.Thread(target=title_loop, daemon=True).start()
 
@@ -242,13 +248,13 @@ async def main():
             email = await asyncio.to_thread(mail_api.create_account)
 
             if not email:
-                log.warning(f"{Beach.WARNING}failed to create email provider={provider}{Style.RESET_ALL}")
+                log.warning(
+                    f"{Beach.WARNING}failed to create email "
+                    f"provider={provider}{Style.RESET_ALL}"
+                )
                 return
 
             username, bio, status, pfp, password = load_profile()
-
-            # username = ''.join(random.choice('abcdefghijklmnopqrstuvwxyz0123456789') for _ in range(10))
-            # password = f"{username}CYBERBEACH"
 
             # run /reg worker
             await asyncio.to_thread(
@@ -266,6 +272,7 @@ async def main():
                 verification_enabled,
                 SOLVER_TYPE,
                 SOLVER_API_KEY,
+                customise_cfg,
             )
         finally:
             semaphore.release()

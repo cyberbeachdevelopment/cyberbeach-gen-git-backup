@@ -2,7 +2,7 @@
 
 from utils.core import *
 
-from solvers.razorcap import RazorCapClient
+from solvers.voidsolver import VoidSolverClient
 from solvers.huzaif import HuzaifClient
 from solvers.anysolver import AnySolverClient
 
@@ -20,7 +20,7 @@ class SolverWrapper:
     
 
     PROVIDERS = {
-        "razorcap": RazorCapClient,
+        "voidsolver": VoidSolverClient,
         "rezosolver": HuzaifClient,
         "anysolver": AnySolverClient,
     }

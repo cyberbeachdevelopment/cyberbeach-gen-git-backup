@@ -1,5 +1,5 @@
 # 🌊 cyberbeach x rezosolver
-v1.01
+v1.02
 
 intrested in making a tool? contact us and recieve fair prices! no questions asked.
 
@@ -40,10 +40,10 @@ example:
     "data": {
         "rezosolver_api_key": "your_rezosolver_api_key",
         "anysolver_api_key": "",
-        "razorcap_api_key": ""
+        "voidsolver_api_key": ""
     },
     "mail": {
-        "api_key": "your_mail_api_key",
+        "freecustomemail_api_key": "your_freecustomemail_api_key",
         "smtp": {
             "enabled": false,
             "host": "",
@@ -58,6 +58,12 @@ example:
     },
     "verification": {
         "enabled": true
+    },
+    "customise": {
+        "hypesquad": true,
+        "pfp": true,
+        "bio": true,
+        "status": true
     },
     "threads": 1,
     "debug": true
@@ -138,11 +144,11 @@ python main.py
 
 ---
 
-## updates (1.01)
+## updates (1.02)
 
-* new customisation (input/user/*)
-* debug can now be disabled through config.json
-* improved logging
+* made customisation to be enabled or disabled in config.json
+* replaced razor.cc solver with voidsolver.tech
+* refactored account.py 
 
 ---
 

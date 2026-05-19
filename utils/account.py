@@ -14,16 +14,22 @@ from utils.solver_wrapper import SolverWrapper
 
 log = setup_logger(__name__)
 
+API = "https://discord.com/api/v9"
+REGISTER_URL = f"{API}/auth/register"
+VERIFY_URL = f"{API}/auth/verify"
+CAPTCHA_HEADERS = ("x-captcha-key", "x-captcha-rqtoken", "x-captcha-session-id")
+
+
 
 def check_token_status(session):
     try:
-        r = session.get("https://discord.com/api/v9/users/@me")
+        r = session.get(f"{API}/users/@me")
 
         log.debug(r.text) # temp
 
         if r.status_code != 200:
             return "invalid"
-        r2 = session.get("https://discord.com/api/v9/users/@me/settings")
+        r2 = session.get(f"{API}/users/@me/settings")
         if r2.status_code == 200:
             return "Valid"
         elif r2.status_code == 403:
@@ -125,449 +131,476 @@ class BackgroundOnliner:
             pass
 
 
-def apply_profile(session, bio=None, status=None, pfp=None):
+def encode_image(path: str) -> str | None:
     try:
-        # bio
-        if bio:
-            bio_payload = {
-                "bio": bio
-            }
+        mime = mimetypes.guess_type(path)[0] or "image/png"
 
-            session.patch(
-                "https://discord.com/api/v9/users/@me/profile",
-                json=bio_payload
-            )
+        with open(path, "rb") as f:
+            encoded = base64.b64encode(f.read()).decode()
 
-            log.info(
-                f"{Beach.INFO}bio updated={Beach.PALM}{bio[:30]}{Style.RESET_ALL}"
-            )
-
-        # status
-        if status:
-            status_payload = {
-                "custom_status": {
-                    "text": status
-                }
-            }
-
-            session.patch(
-                "https://discord.com/api/v9/users/@me/settings",
-                json=status_payload
-            )
-
-            log.info(
-                f"{Beach.INFO}status updated={Beach.PALM}{status[:30]}{Style.RESET_ALL}"
-            )
-
-        # hypesquad  
-        # will be toggable later  
-        house_id = random.choice([1, 2, 3])
-
-        houses = {
-            1: "Bravery",
-            2: "Brilliance",
-            3: "Balance"
-        }
-
-        hypesquad_payload = {
-            "house_id": house_id
-        }
-
-        session.post(
-            "https://discord.com/api/v9/hypesquad/online",
-            json=hypesquad_payload
-        )
-
-        log.info(
-            f"{Beach.INFO}hypesquad updated={Beach.PALM}{houses[house_id]}{Style.RESET_ALL}"
-        )
-
-        # pfp
-        # PRIMARY
-        avatar_data = None
-
-        if pfp and os.path.exists(pfp) and os.path.isfile(pfp):
-            try:
-                mime_type = mimetypes.guess_type(pfp)[0] or "image/png"
-
-                with open(pfp, "rb") as f:
-                    encoded = base64.b64encode(f.read()).decode()
-
-                avatar_data = f"data:{mime_type};base64,{encoded}"
-
-                log.info(
-                    f"{Beach.INFO}pfp updated={Beach.PALM}{os.path.basename(pfp)}{Style.RESET_ALL}"
-                )
-
-            except Exception as e:
-                log.warning(
-                    f"{Beach.WARNING}local pfp failed error={e}{Style.RESET_ALL}"
-                )
-
-        # FALLBACK (dicebear temp)
-        if not avatar_data:
-            try:
-                seed = random.randint(1, 10_000_000)
-                url = f"https://api.dicebear.com/7.x/pixel-art/png?seed={seed}"
-
-                r = requests.get(url, timeout=10)
-                r.raise_for_status()
-
-                encoded = base64.b64encode(r.content).decode()
-                avatar_data = f"data:image/png;base64,{encoded}"
-
-                log.info(
-                    f"{Beach.INFO}pfp fallback used=dicebear{Style.RESET_ALL}"
-                )
-
-            except Exception as e:
-                log.warning(
-                    f"{Beach.WARNING}dicebear fallback failed error={e}{Style.RESET_ALL}"
-                )
-
-        if avatar_data:
-            try:
-                session.patch(
-                    "https://discord.com/api/v9/users/@me",
-                    json={"avatar": avatar_data}
-                )
-
-                log.info(
-                    f"{Beach.INFO}pfp applied successfully{Style.RESET_ALL}"
-                )
-
-            except Exception as e:
-                log.warning(
-                    f"{Beach.WARNING}discord update failed error={e}{Style.RESET_ALL}"
-                )
+        return f"data:{mime};base64,{encoded}"
 
     except Exception as e:
         log.warning(
-            f"{Beach.WARNING}profile update failed error={e}{Style.RESET_ALL}"
+            f"{Beach.WARNING}image encode failed error={e}{Style.RESET_ALL}"
+        )
+        return None
+
+
+def fetch_dicebear_avatar() -> str | None:
+    try:
+        seed = random.randint(1, 10_000_000)
+
+        r = requests.get(
+            f"https://api.dicebear.com/7.x/pixel-art/png?seed={seed}",
+            timeout=10
         )
 
+        r.raise_for_status()
 
-def reg(email, username, password, bio, status, pfp, proxy=None, current_num=1, logger=None, mail_api=None, verification_enabled=True, solver_type=None, solver_api_key=None):
+        encoded = base64.b64encode(r.content).decode()
+
+        log.info(
+            f"{Beach.INFO}pfp fallback used=dicebear{Style.RESET_ALL}"
+        )
+
+        return f"data:image/png;base64,{encoded}"
+
+    except Exception as e:
+        log.warning(
+            f"{Beach.WARNING}dicebear fallback failed error={e}{Style.RESET_ALL}"
+        )
+        return None
+
+
+def discord_patch(session, endpoint, payload, success_msg=None):
+    try:
+        r = session.patch(f"{API}{endpoint}", json=payload)
+        r.raise_for_status()
+
+        if success_msg:
+            log.info(success_msg)
+
+        return True
+
+    except Exception as e:
+        log.warning(
+            f"{Beach.WARNING}request failed endpoint={endpoint} error={e}{Style.RESET_ALL}"
+        )
+        return False
+
+
+def apply_profile(
+    session,
+    bio=None,
+    status=None,
+    pfp=None,
+    do_bio=True,
+    do_status=True,
+    do_pfp=True,
+    do_hypesquad=True,
+):
+    # bio
+    if do_bio and bio:
+        discord_patch(
+            session,
+            "/users/@me/profile",
+            {"bio": bio},
+            f"{Beach.INFO}bio updated={Beach.PALM}{bio[:30]}{Style.RESET_ALL}"
+        )
+
+    # custom status
+    if do_status and status:
+        discord_patch(
+            session,
+            "/users/@me/settings",
+            {"custom_status": {"text": status}},
+            f"{Beach.INFO}status updated={Beach.PALM}{status[:30]}{Style.RESET_ALL}"
+        )
+
+    # hypesquad
+    if do_hypesquad:
+        houses = {1: "Bravery", 2: "Brilliance", 3: "Balance"}
+        house_id = random.choice(tuple(houses))
+
+        try:
+            r = session.post(
+                f"{API}/hypesquad/online",
+                json={"house_id": house_id},
+            )
+            r.raise_for_status()
+            log.info(
+                f"{Beach.INFO}hypesquad updated="
+                f"{Beach.PALM}{houses[house_id]}{Style.RESET_ALL}"
+            )
+        except Exception as e:
+            log.warning(
+                f"{Beach.WARNING}hypesquad failed error={e}{Style.RESET_ALL}"
+            )
+
+    # avatar
+    if do_pfp:
+        avatar_data = None
+
+        if pfp and os.path.isfile(pfp):
+            avatar_data = encode_image(pfp)
+            if avatar_data:
+                log.info(
+                    f"{Beach.INFO}pfp loaded="
+                    f"{Beach.PALM}{os.path.basename(pfp)}{Style.RESET_ALL}"
+                )
+
+        avatar_data = avatar_data or fetch_dicebear_avatar()
+
+        if avatar_data:
+            discord_patch(
+                session,
+                "/users/@me",
+                {"avatar": avatar_data},
+                f"{Beach.INFO}pfp applied successfully{Style.RESET_ALL}"
+            )
+
+
+def _clear_captcha_headers(session):
+    for h in CAPTCHA_HEADERS:
+        session.headers.pop(h, None)
+
+
+def _apply_captcha_headers(session, cap_token, rqtoken, session_id):
+    session.headers.update({
+        "x-captcha-key": cap_token,
+        "x-captcha-rqtoken": rqtoken or "",
+        "x-captcha-session-id": session_id or "",
+    })
+
+
+def _handle_rate_limit(res_json, status_code):
+    if status_code != 429:
+        return False
+    retry_after = res_json.get("retry_after", 60)
+    log.warning(
+        f"{Beach.WARNING}rate limited{Style.RESET_ALL}, "
+        f"waiting {Beach.SAND}{retry_after:.0f}s{Style.RESET_ALL}..."
+    )
+    time.sleep(retry_after + 1)
+    return True
+
+
+def _post_json(session, url, payload, retries=1, backoff=1.0):
+    last_exc = None
+    for attempt in range(retries + 1):
+        try:
+            res = session.post(url, json=payload)
+            try:
+                data = res.json()
+            except Exception:
+                data = {}
+            if _handle_rate_limit(data, res.status_code):
+                # one extra try after rate-limit sleep
+                res = session.post(url, json=payload)
+                try:
+                    data = res.json()
+                except Exception:
+                    data = {}
+            return res, data
+        except Exception as e:
+            last_exc = e
+            if attempt < retries:
+                time.sleep(backoff)
+    if last_exc:
+        log.debug(f"_post_json failed: {type(last_exc).__name__}: {last_exc}")
+    return None, None
+
+
+def _solve_captcha(solver_type, solver_api_key, rqdata, proxy, email):
+    log.info(f"{Beach.INFO}solving captcha: email={Beach.PALM}{email}{Style.RESET_ALL}")
+    start = time.time()
+    try:
+        cap_token = SolverWrapper(solver_type, solver_api_key).solve(
+            rqdata=rqdata,
+            user_agent=USER_AGENT,
+            proxy=proxy,
+        )
+    except TypeError as e:
+        log.error(f"{Beach.ERROR}error={type(e).__name__}: {e}{Style.RESET_ALL}")
+        return None, "solver_error"
+    except Exception as e:
+        log.error(f"{Beach.ERROR}error={type(e).__name__}: {e}{Style.RESET_ALL}")
+        return None, "solver_exception"
+
+    if not cap_token:
+        log.warning(
+            f"{Beach.WARNING}no captcha available: "
+            f"captcha_token={cap_token}{Style.RESET_ALL}"
+        )
+        return None, None
 
     log.info(
-    f"{Beach.INFO}worker [ {current_num} ] started "
-    f"proxy={Beach.SAND}{proxy.split('@')[-1] if proxy else 'direct'}{Style.RESET_ALL} "
-    f"email={Beach.PALM}{email}{Style.RESET_ALL}"
-)
+        f"{Beach.INFO}captcha solved "
+        f"({Beach.PALM}{time.time() - start:.1f}s{Style.RESET_ALL})"
+    )
+    return cap_token, None
+
+
+def _extract_mail_token(session, verify_url, click_headers, max_hops=2):
+    if "token=" in verify_url:
+        return verify_url.split("token=")[-1].split("&")[0]
+
+    location = verify_url
+    for _ in range(max_hops):
+        r = session.get(location, headers=click_headers, allow_redirects=False)
+        location = r.headers.get("Location", "")
+        if not location:
+            return None
+        fragment = urlparse(location).fragment
+        if fragment and "token=" in fragment:
+            return fragment.split("token=")[-1].split("&")[0]
+    return None
+
+
+def _finalize(session, email, password, auth_token, onliner, logger, status=None):
+    if status is None:
+        status = check_token_status(session)
+    save_account(email, password, auth_token, status, logger=logger)
+    onliner.stop()
+
+
+def reg(
+    email,
+    username,
+    password,
+    bio,
+    status,
+    pfp,
+    proxy=None,
+    current_num=1,
+    logger=None,
+    mail_api=None,
+    verification_enabled=True,
+    solver_type=None,
+    solver_api_key=None,
+    customise=None,
+):
+    customise = customise or {}
+    do_pfp       = customise.get("pfp", True)
+    do_bio       = customise.get("bio", True)
+    do_status    = customise.get("status", True)
+    do_hypesquad = customise.get("hypesquad", True)
+    
+    # setup
+    log.info(
+        f"{Beach.INFO}worker [ {current_num} ] started "
+        f"proxy={Beach.SAND}{proxy.split('@')[-1] if proxy else 'direct'}{Style.RESET_ALL} "
+        f"email={Beach.PALM}{email}{Style.RESET_ALL}"
+    )
+
     session = StealthSession()
     if proxy:
-        proxy_url = f"http://{proxy}" if "://" not in proxy else proxy
-        session.proxies = {
-            "http": proxy_url,
-            "https": proxy_url
-        }
+        proxy_url = proxy if "://" in proxy else f"http://{proxy}"
+        session.proxies = {"http": proxy_url, "https": proxy_url}
+
     try:
         dcfduid, sdcfduid = fetch_cookies(session)
         fingerprint = get_fingerprint(session, dcfduid, sdcfduid)
-    except Exception:
-        log.warning(f"{Beach.WARNING}fingerprint failed{Style.RESET_ALL}")
+    except Exception as e:
+        log.warning(f"{Beach.WARNING}fingerprint failed: error={e}{Style.RESET_ALL}")
         return
+
     build_num = get_build_number(proxy)
-    super_props = build_super_properties(build_num)
-    headers = build_headers(fingerprint, super_props)
-    session.headers.update(headers)
-    fake_user = ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(12))
-    fake_payload = {
+    session.headers.update(
+        build_headers(fingerprint, build_super_properties(build_num))
+    )
+
+    base_payload = {
         "fingerprint": fingerprint,
+        "date_of_birth": "1997-02-01",
+        "consent": True,
+    }
+
+
+    # warm-up: throwaway register to surface rate limits early
+    fake_user = "".join(
+        random.choice(string.ascii_lowercase + string.digits) for _ in range(12)
+    )
+    _post_json(session, REGISTER_URL, {
+        **base_payload,
         "email": f"{fake_user}@outlook.com",
         "username": fake_user,
         "password": f"{fake_user}Ab1!@#",
-        "date_of_birth": "1997-02-01",
-        "consent": True,
-    }
-    try:
-        fake_res = session.post("https://discord.com/api/v9/auth/register", json=fake_payload)
-        fake_json = fake_res.json()
-        if fake_res.status_code == 429:
-            retry_after = fake_json.get("retry_after", 60)
-            log.warning(
-    f"{Beach.WARNING}rate limited{Style.RESET_ALL}, "
-    f"waiting {Beach.SAND}{retry_after:.0f}s{Style.RESET_ALL}..."
-)
-            time.sleep(retry_after + 1)
-    except Exception:
-        pass
+    })
 
+
+    # real register (handles its own 429 retry)
     register_payload = {
-        "fingerprint": fingerprint,
+        **base_payload,
         "email": email,
         "username": username,
         "password": password,
-        "date_of_birth": "1997-02-01",
-        "consent": True,
     }
 
-    res = session.post("https://discord.com/api/v9/auth/register", json=register_payload)
-    start_time = time.time()
-    res_json = res.json()
+    _, res_json = _post_json(session, REGISTER_URL, register_payload)
+    if not res_json:
+        STATS["error"] += 1
+        log.error(f"{Beach.ERROR}register request failed{Style.RESET_ALL}")
+        return
 
-    if res.status_code == 429:
-        retry_after = res_json.get("retry_after", 60)
-        log.warning(
-    f"{Beach.WARNING}rate limited{Style.RESET_ALL}, "
-    f"waiting {Beach.SAND}{retry_after:.0f}s{Style.RESET_ALL}..."
-)
-        time.sleep(retry_after + 1)
-        res = session.post("https://discord.com/api/v9/auth/register", json=register_payload)
-        res_json = res.json()
-
-    captcha_sitekey = res_json.get("captcha_sitekey")
     captcha_rqdata = res_json.get("captcha_rqdata")
-    captcha_rqtoken = res_json.get("captcha_rqtoken")
-    captcha_session_id = res_json.get("captcha_session_id")
-
-    if not captcha_sitekey or not captcha_rqdata:
-        log.warning(f"{Beach.WARNING}no captcha available: captcha_sitekey={captcha_sitekey} captcha_rqdata={captcha_rqdata}{Style.RESET_ALL}")
+    if not res_json.get("captcha_sitekey") or not captcha_rqdata:
+        log.warning(
+            f"{Beach.WARNING}no captcha available: "
+            f"captcha_sitekey={res_json.get('captcha_sitekey')} "
+            f"captcha_rqdata={captcha_rqdata}{Style.RESET_ALL}"
+        )
         return
 
-    log.info(
-        f"{Beach.INFO}solving captcha: email={Beach.PALM}{email}{Style.RESET_ALL}"
+    # solve register captcha + retry register with captcha headers
+    cap_token, _ = _solve_captcha(
+        solver_type, solver_api_key, captcha_rqdata, proxy, email
     )
-    #cap_token, cookies = SolverWrapper(
-    cap_token = SolverWrapper(
-        solver_type,
-        solver_api_key
-    ).solve(
-        rqdata=captcha_rqdata,
-        user_agent=USER_AGENT,
-        proxy=proxy
-    )
-
     if not cap_token:
-        log.warning(f"{Beach.WARNING}no captcha available: captcha_token={cap_token}{Style.RESET_ALL}")
         STATS["error"] += 1
         return
 
-    # if cookies:
-    #     for k, v in cookies.items():
-    #         session.cookies.set(k, v)
-    solve_time = time.time() - start_time
-    log.info(
-    f"{Beach.INFO}captcha solved ({Beach.PALM}{solve_time:.1f}s{Style.RESET_ALL})"
-)
+    _apply_captcha_headers(
+        session,
+        cap_token,
+        res_json.get("captcha_rqtoken"),
+        res_json.get("captcha_session_id"),
+    )
 
-    session.headers.update({
-        "x-captcha-key": cap_token,
-        "x-captcha-rqtoken": captcha_rqtoken,
-        "x-captcha-session-id": captcha_session_id,
-    })
+    response, res_data = _post_json(session, REGISTER_URL, register_payload, retries=2)
+    if not res_data:
+        STATS["error"] += 1
+        log.error(f"{Beach.ERROR}register-with-captcha failed{Style.RESET_ALL}")
+        return
 
-    response = None
-    for attempt in range(3):
+    if response is not None:
         try:
-            response = session.post("https://discord.com/api/v9/auth/register", json=register_payload)
-            break
+            log.debug(response.text[:500])
         except Exception:
-            if attempt < 2:
-                time.sleep(1)
-            else:
-                return
-    try:
-        raw_text = response.text
-        log.debug(f"{raw_text[:500]}")
-    except Exception as e:
+            pass
+
+    auth_token = res_data.get("token")
+    if not auth_token:
         STATS["error"] += 1
-        log.error(
-            f"{Beach.ERROR}error={type(e).__name__}: {e}{Style.RESET_ALL}"
-        )
-        
-    try:
-        res_data = response.json()
-    except Exception as e:
-        STATS["error"] += 1
-        log.error(
-            f"{Beach.ERROR}error={type(e).__name__}: {e}{Style.RESET_ALL}"
-        )
+        log.error(f"{Beach.ERROR}error={res_data}{Style.RESET_ALL}")
         return
-    if 'token' not in res_data:
-        STATS["error"] += 1
-        log.error(
-            f"{Beach.ERROR}error={res_data}{Style.RESET_ALL}"
-        )
-        return
-    auth_token = res_data['token']
-    for h in ["x-captcha-key", "x-captcha-rqtoken", "x-captcha-session-id"]:
-        session.headers.pop(h, None)
+
+    _clear_captcha_headers(session)
     session.headers.update({"authorization": auth_token})
     log.info(
-        f"{Beach.INFO}generated token={Beach.PALM}{auth_token[:35]}...{Style.RESET_ALL}"
+        f"{Beach.INFO}generated token="
+        f"{Beach.PALM}{auth_token[:35]}...{Style.RESET_ALL}"
     )
 
     onliner = BackgroundOnliner(auth_token)
     onliner.start()
 
+
+    # skip verification
     if not verification_enabled:
-        pre_verify_status = check_token_status(session)
-        save_account(email, password, auth_token, pre_verify_status, logger=logger)
-        onliner.stop()
+        _finalize(session, email, password, auth_token, onliner, logger)
         return
 
     log.info(f"{Beach.INFO}status=verification pending{Style.RESET_ALL}")
-    
-    verify_url = None
-    if mail_api:
-        verify_url = mail_api.get_verify_url(email, 3, 120, proxy)
+
+
+    # fetch + parse verify url
+    verify_url = mail_api.get_verify_url(email, 3, 120, proxy) if mail_api else None
     if not verify_url:
-        token_status = check_token_status(session)
-        save_account(email, password, auth_token, token_status, logger=logger)
-        onliner.stop()
+        _finalize(session, email, password, auth_token, onliner, logger)
         return
+
+    click_headers = {
+        "accept": (
+            "text/html,application/xhtml+xml,application/xml;q=0.9,"
+            "image/avif,image/webp,image/apng,*/*;q=0.8,"
+            "application/signed-exchange;v=b3;q=0.7"
+        ),
+        "accept-language": "en-US,en;q=0.9",
+        "sec-ch-ua": (
+            f'"Chromium";v="{CHROME_VERSION}", '
+            f'"Google Chrome";v="{CHROME_VERSION}", '
+            f'"Not-A.Brand";v="99"'
+        ),
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": '"Windows"',
+        "sec-fetch-dest": "document",
+        "sec-fetch-mode": "navigate",
+        "sec-fetch-site": "none",
+        "sec-fetch-user": "?1",
+        "upgrade-insecure-requests": "1",
+        "user-agent": USER_AGENT,
+    }
 
     try:
-        click_headers = {
-            'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-            'accept-language': 'en-US,en;q=0.9',
-            'sec-ch-ua': f'"Chromium";v="{CHROME_VERSION}", "Google Chrome";v="{CHROME_VERSION}", "Not-A.Brand";v="99"',
-            'sec-ch-ua-mobile': '?0',
-            'sec-ch-ua-platform': '"Windows"',
-            'sec-fetch-dest': 'document',
-            'sec-fetch-mode': 'navigate',
-            'sec-fetch-site': 'none',
-            'sec-fetch-user': '?1',
-            'upgrade-insecure-requests': '1',
-            'user-agent': USER_AGENT,
-        }
-
+        mail_token = _extract_mail_token(session, verify_url, click_headers)
+    except Exception:
         mail_token = None
 
-        if "token=" in verify_url:
-            mail_token = verify_url.split("token=")[-1].split("&")[0]
-
-        if not mail_token:
-            location = ""
-            r1 = session.get(verify_url, headers=click_headers, allow_redirects=False)
-            location = r1.headers.get("Location", "")
-
-            if location:
-                fragment = urlparse(location).fragment
-                if fragment and "token=" in fragment:
-                    mail_token = fragment.split("token=")[-1].split("&")[0]
-
-            if not mail_token and location:
-                r2 = session.get(location, headers=click_headers, allow_redirects=False)
-                location2 = r2.headers.get("Location", "")
-                if location2:
-                    fragment2 = urlparse(location2).fragment
-                    if fragment2 and "token=" in fragment2:
-                        mail_token = fragment2.split("token=")[-1].split("&")[0]
-
-        if not mail_token:
-            token_status = check_token_status(session)
-            save_account(email, password, auth_token, token_status, logger=logger)
-            onliner.stop()
-            return
-
-    except Exception:
-        token_status = check_token_status(session)
-        save_account(email, password, auth_token, token_status, logger=logger)
-        onliner.stop()
+    if not mail_token:
+        _finalize(session, email, password, auth_token, onliner, logger)
         return
 
-    for h in ["x-captcha-key", "x-captcha-rqtoken", "x-captcha-session-id"]:
-        session.headers.pop(h, None)
 
+    # verify
+    _clear_captcha_headers(session)
     time.sleep(random.uniform(1, 3))
 
-    verify_res = session.post(
-        "https://discord.com/api/v9/auth/verify",
-        json={"token": mail_token}
-    )
-    verify_json = verify_res.json()
+    _, verify_json = _post_json(session, VERIFY_URL, {"token": mail_token})
+    verify_json = verify_json or {}
 
     if verify_json.get("captcha_sitekey"):
-        log.info(
-            f"{Beach.INFO}solving captcha: email={Beach.PALM}{email}{Style.RESET_ALL}"
+        cap_token, err = _solve_captcha(
+            solver_type,
+            solver_api_key,
+            verify_json.get("captcha_rqdata", ""),
+            proxy,
+            email,
         )
-
-        verify_start = time.time()
-
-        try:
-            solver = SolverWrapper(solver_type, solver_api_key)
-
-            #args
-            sitekey = verify_json["captcha_sitekey"]
-            rqdata = verify_json.get("captcha_rqdata", "")
-
-            # verify_cap_token, verify_cookies = solver.solve(
-            #     sitekey,
-            #     rqdata,
-            #     USER_AGENT,
-            #     proxy
-            # )
-
-            verify_cap_token = solver.solve(
-                rqdata=rqdata,
-                user_agent=USER_AGENT,
-                proxy=proxy
-            )
-
-            verify_cookies = None
-        except TypeError as e:
-            log.error(
-            f"{Beach.ERROR}error={type(e).__name__}: {e}{Style.RESET_ALL}"
-        )
+        if err:
             STATS["error"] += 1
-
-            save_account(email, password, auth_token, "solver_error", logger=logger)
-            onliner.stop()
+            _finalize(session, email, password, auth_token, onliner, logger, status=err)
+            return
+        if not cap_token:
+            STATS["error"] += 1
+            _finalize(session, email, password, auth_token, onliner, logger)
             return
 
-        except Exception as e:
-            log.error(
-            f"{Beach.ERROR}error={type(e).__name__}: {e}{Style.RESET_ALL}"
-        )
-            STATS["error"] += 1
-
-            save_account(email, password, auth_token, "solver_exception", logger=logger)
-            onliner.stop()
-            return
-
-        if not verify_cap_token:
-            log.warning(f"{Beach.WARNING}no captcha available: captcha_token={verify_cap_token}{Style.RESET_ALL}")
-            STATS["error"] += 1
-
-            token_status = check_token_status(session)
-            save_account(email, password, auth_token, token_status, logger=logger)
-            onliner.stop()
-            return
-
-        verify_solve_time = time.time() - verify_start
-        log.info(
-            f"{Beach.INFO}captcha solved ({Beach.PALM}{verify_solve_time:.1f}s{Style.RESET_ALL})"
+        _apply_captcha_headers(
+            session,
+            cap_token,
+            verify_json.get("captcha_rqtoken"),
+            verify_json.get("captcha_session_id"),
         )
 
-        if verify_cookies:
-            for k, v in verify_cookies.items():
-                session.cookies.set(k, v)
+        _, verify_json = _post_json(session, VERIFY_URL, {"token": mail_token})
+        verify_json = verify_json or {}
 
-        session.headers.update({
-            "x-captcha-key": verify_cap_token,
-            "x-captcha-rqtoken": verify_json.get("captcha_rqtoken", ""),
-            "x-captcha-session-id": verify_json.get("captcha_session_id", ""),
-        })
-
-        verify_res = session.post(
-            "https://discord.com/api/v9/auth/verify",
-            json={"token": mail_token}
-        )
-        verify_json = verify_res.json()
-
+    # rotate to new token if discord issued one post-verify
     new_token = verify_json.get("token")
     if new_token:
         auth_token = new_token
-        session.headers.update({"authorization": auth_token})    
+        session.headers.update({"authorization": auth_token})
 
-    for h in ["x-captcha-key", "x-captcha-rqtoken", "x-captcha-session-id"]:
-        session.headers.pop(h, None)
+    _clear_captcha_headers(session)
 
-    # pfp, bio, status
-    apply_profile(session, bio, status, pfp)    
+    # customise: pfp / bio / status / hypesquad (each toggleable)
+    try:
+        apply_profile(
+            session,
+            bio=bio,
+            status=status,
+            pfp=pfp,
+            do_bio=do_bio,
+            do_status=do_status,
+            do_pfp=do_pfp,
+            do_hypesquad=do_hypesquad,
+        )
+    except Exception as e:
+        log.warning(
+            f"{Beach.WARNING}apply_profile failed: "
+            f"{type(e).__name__}: {e}{Style.RESET_ALL}"
+        )
 
-    token_status = check_token_status(session)
-    save_account(email, password, auth_token, token_status, logger=logger)
-    onliner.stop()
+    _finalize(session, email, password, auth_token, onliner, logger)

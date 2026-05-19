@@ -1,6 +1,6 @@
 # anysolver.io
 
-import httpx, time
+import requests, time
 from utils.core import *
 log = setup_logger(__name__)
 
@@ -49,7 +49,7 @@ class AnySolverClient:
 
         try:
             log.debug("creating task...")
-            create = httpx.post(
+            create = requests.post(
                 f"{self.base_url}/createTask",
                 json={"clientKey": self.api_key, "task": task},
                 timeout=30
@@ -76,7 +76,7 @@ class AnySolverClient:
             time.sleep(3)
 
             try:
-                result = httpx.post(
+                result = requests.post(
                     f"{self.base_url}/getTaskResult",
                     json={"clientKey": self.api_key, "taskId": task_id},
                     timeout=30

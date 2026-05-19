@@ -1,0 +1,3 @@
+2026-05-19 18:02:26 | INFO | [37mcreated file=config.json[0m
+2026-05-19 18:02:26 | INFO | [37mstructure check complete[0m
+2026-05-19 18:02:26 | WARNING | [33mapi key missing: provider=[0m

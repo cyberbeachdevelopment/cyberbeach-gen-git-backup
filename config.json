@@ -1,0 +1,45 @@
+{
+    "threads": 3,
+    "debug": false,
+
+    "data": {
+        "rezosolver_api_key": "",
+        "anysolver_api_key": "",
+        "razorcap_api_key": ""
+    },
+
+    "verification": {
+        "enabled": true
+    },
+
+    "customise": {
+        "hypesquad": true
+    },
+
+    "mail": {
+        "freecustomemail_api_key": "",
+
+        "smtp": {
+            "enabled": false,
+
+            "server": {
+                "host": "",
+                "port": 465,
+                "use_ssl": true
+            },
+
+            "imap": {
+                "host": "",
+                "port": 993,
+                "mailbox": "INBOX"
+            },
+
+            "auth": {
+                "username": "",
+                "password": ""
+            },
+
+            "domain": ""
+        }
+    }
+}

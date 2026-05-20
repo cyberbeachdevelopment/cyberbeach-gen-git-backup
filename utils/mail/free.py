@@ -17,10 +17,10 @@ class TempTfMailApi:
     INBOXES_ENDPOINT = f"{BASE_URL}/inboxes"
     DEFAULT_DOMAIN = "junkstopper.info"
 
-    # ---- shared across all instances / threads ----
-    _cleanup_lock = threading.Lock()       # only one cleanup at a time
-    _last_cleanup_ts = 0.0                 # epoch of last successful cleanup
-    _CLEANUP_COOLDOWN = 8.0                # seconds; skip cleanup if recent
+    # shared across all instances
+    _cleanup_lock = threading.Lock()
+    _last_cleanup_ts = 0.0
+    _CLEANUP_COOLDOWN = 8.0
 
     def __init__(self, logger=None, forced_domain: str = None, api_key: str = None):
         self.created_emails = {}
@@ -78,25 +78,18 @@ class TempTfMailApi:
         local = ''.join(random.choices(string.ascii_lowercase + string.digits, k=10))
         return f"{local}@{self.DEFAULT_DOMAIN}"
 
-    # ---------------------------------------------------------------
-    # Cleanup is now serialized across all workers + has a cooldown,
-    # so multiple workers hitting the inbox limit at the same instant
-    # will NOT each fire their own deletion loop (no more duplicate
-    # warnings and no more racing 404s).
-    # ---------------------------------------------------------------
+
     def _delete_all_inboxes(self, proxy: str = None):
         if not self.api_key:
             return False
 
-        # Only one worker performs cleanup; others wait and then skip
-        # if a cleanup just finished (within the cooldown window).
         acquired = TempTfMailApi._cleanup_lock.acquire(blocking=True, timeout=60)
         if not acquired:
             log.warning(f"{Beach.WARNING}cleanup lock busy, skipping{Style.RESET_ALL}")
             return False
 
         try:
-            # If another worker just cleaned, don't do it again.
+
             if (time.time() - TempTfMailApi._last_cleanup_ts) < TempTfMailApi._CLEANUP_COOLDOWN:
                 log.debug("recent cleanup detected, skipping duplicate cleanup")
                 return True
@@ -153,7 +146,7 @@ class TempTfMailApi:
                     log.debug(f"deleted inbox={email}")
                     continue
 
-                # 404 == already deleted (by us or by server expiry) -> treat as success, silently
+                # 404 =
                 if del_resp.status_code == 404:
                     already_gone += 1
                     continue
@@ -228,8 +221,8 @@ class TempTfMailApi:
             full_errors = ["full", "limit", "quota", "too many inboxes", "maximum inboxes"]
 
             if any(x in error_text for x in full_errors):
-                # Only ONE worker actually logs + runs cleanup; others wait on the lock
-                # and the cooldown check skips redundant cleanups.
+
+                # and the cooldown check skips redundant cleanups
                 with TempTfMailApi._cleanup_lock:
                     needs_cleanup = (time.time() - TempTfMailApi._last_cleanup_ts) >= TempTfMailApi._CLEANUP_COOLDOWN
 
@@ -365,7 +358,7 @@ class TempTfMailApi:
         return None
 
     def delete_inbox(self, email: str):
-        # Not required for flow; we only skip old message ids while polling.
+
         return True
 
     def _read_inbox(self, email: str, proxy: str = None):

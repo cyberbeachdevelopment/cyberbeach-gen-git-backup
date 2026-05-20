@@ -204,16 +204,6 @@ start.bat
 
 ---
 
-# changelog
-
-## v1.03
-
-- converted fully to anysolver.com as solver
-- added phone verification (5sim.net)
-- polished code
-
----
-
 # disclaimer
 
 This project is provided for educational and research purposes only.

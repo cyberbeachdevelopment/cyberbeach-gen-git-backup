@@ -99,14 +99,13 @@ class AnySolverClient:
                         f"id={task_id} failed error={result.get('errorCode')} "
                         f"desc={result.get('errorDescription')}"
                     )
-                    raise Exception(
-                        f"{result.get('errorCode')}: {result.get('errorDescription', 'Unknown error')}"
-                    )
+                    return None
 
                 if status != "processing":
                     log.warning(f"id={task_id} unexpected_status={status}")
-                    raise Exception(f"Unexpected status: {status}")
+                    return None
 
             except Exception as e:
                 STATS["error"] += 1
                 log.warning(f"id={task_id} poll_error={e}")
+                return None

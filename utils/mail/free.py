@@ -80,7 +80,6 @@ class TempTfMailApi:
         proxies = self._build_proxies(proxy)
 
         try:
-            # throttle before request
             time.sleep(1.5)
 
             resp = requests.get(
@@ -103,10 +102,7 @@ class TempTfMailApi:
             if isinstance(inboxes, dict):
                 inboxes = inboxes.get("inboxes", [])
 
-            deleted = 0
-
             for inbox in inboxes:
-
                 email = (
                     inbox.get("inbox")
                     or inbox.get("email")
@@ -117,11 +113,8 @@ class TempTfMailApi:
                     continue
 
                 encoded_email = quote(email, safe="")
-
                 delete_url = f"{self.INBOXES_ENDPOINT}/{encoded_email}"
 
-                # IMPORTANT:
-                # hard throttle EVERY request
                 time.sleep(1.2)
 
                 del_resp = requests.delete(
@@ -131,55 +124,23 @@ class TempTfMailApi:
                     proxies=proxies,
                 )
 
-                # success
+                # continue
                 if del_resp.ok:
-                    deleted += 1
                     log.debug(f"deleted inbox={email}")
                     continue
 
-                # rate limit
-                if del_resp.status_code == 429:
-
-                    log.warning(
-                        f"{Beach.WARNING}rate limited deleting "
-                        f"{email}, sleeping 5s{Style.RESET_ALL}"
-                    )
-
-                    time.sleep(5)
-
-                    # retry ONCE only
-                    retry_resp = requests.delete(
-                        delete_url,
-                        headers=self._headers(),
-                        timeout=20,
-                        proxies=proxies,
-                    )
-
-                    if retry_resp.ok:
-                        deleted += 1
-                        log.debug(f"deleted inbox after retry={email}")
-
-                    continue
-
+                # break
                 log.warning(
-                    f"{Beach.WARNING}failed deleting "
-                    f"{email} status={del_resp.status_code}"
-                    f"{Style.RESET_ALL}"
+                    f"{Beach.WARNING}failed deleting {email} "
+                    f"status={del_resp.status_code}{Style.RESET_ALL}"
                 )
-
-            log.warning(
-                f"{Beach.WARNING}deleted {deleted} inboxes{Style.RESET_ALL}"
-            )
+                return False
 
             return True
 
         except Exception as e:
             STATS["error"] += 1
-
-            log.error(
-                f"{Beach.ERROR}delete inboxes error={e}{Style.RESET_ALL}"
-            )
-
+            log.error(f"{Beach.ERROR}delete inboxes error={e}{Style.RESET_ALL}")
             return False
 
     def _register_inbox(self, email: str, proxy: str = None) -> bool:

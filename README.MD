@@ -158,6 +158,8 @@ john123:password123@127.0.0.1:8000
 proxyuser:mypass@192.168.1.10:9000
 ```
 
+PS: Make sure they are **Sticky** proxies & **Residential** for the best results.
+
 (Recommended Since Update)
 
 | Rank | Provider | Status |

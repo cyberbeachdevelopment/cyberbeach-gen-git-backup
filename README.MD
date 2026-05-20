@@ -1,4 +1,4 @@
-# cyberbeach — discord account creator
+# Cyberbeach Discord Account Creator
 
 v1.03
 
@@ -194,6 +194,12 @@ Run:
 
 ```bash
 python main.py
+```
+
+Or use:
+
+```bash
+start.bat
 ```
 
 ---

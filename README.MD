@@ -6,8 +6,8 @@ Need a custom tool built? Reach out and get a fair quote, no bs.
 
 [AD] Need a custom **IMAP Mail Host** for as low as **10 USD** for a **30%** increase in **Unlock Rate**?
 
-- ![cyberbeach.cc](https://cyberbeach.cc)
-- ![discord.gg/cyberbeach](https://discord.gg/cyberbeach)
+- [cyberbeach.cc](https://cyberbeach.cc)
+- [discord.gg/cyberbeach](https://discord.gg/cyberbeach)
 
 ![CyberBeach-Gen](imgs/preview.png)
 

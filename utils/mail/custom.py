@@ -1,28 +1,30 @@
 # cyberbeach.cc & discord.gg/cyberbeach
 
-# this is used with our custom SMTP/IMAP mail nodes, to purchase please visit cyberbeach.cc OR discord.gg/cyberbeach
+# this is used with our custom IMAP mail hosts, to purchase please visit cyberbeach.cc OR discord.gg/cyberbeach
 
 import time, imaplib, email, re, random
 
 from utils.core import setup_logger, STATS, Beach
 from colorama import Style
+
 log = setup_logger(__name__)
 
 
-# dynamic mail
-class CustomMailApi:
+class ImapMailApi:
 
-    def __init__(self, logger=None, smtp_config: dict = None, forced_domain: str = None):
+    def __init__(self, logger=None, imap_config: dict = None, forced_domain: str = None):
         self.logger = logger
-        self.config = smtp_config or {}
+        self.config = imap_config or {}
         self.forced_domain = forced_domain
 
         self.username = self.config.get("username") or self.config.get("email")
         self.password = self.config.get("password")
-        self.imap_host = self.config.get("imap_host") or self.config.get("host")
-        self.imap_port = int(self.config.get("imap_port", 993))
+
+        self.host = self.config.get("host")
+        self.port = int(self.config.get("port", 993))
         self.use_ssl = bool(self.config.get("use_ssl", True))
         self.mailbox = self.config.get("mailbox", "INBOX")
+        self.domain = self.config.get("domain")
 
 
     def create_account(self, email: str = None, password: str = None, proxy: str = None):
@@ -34,8 +36,8 @@ class CustomMailApi:
             return self.username
 
         domain = None
-        if self.imap_host and "." in self.imap_host:
-            domain = self.config.get("domain") or self.imap_host.split(":")[0]
+        if self.host and "." in self.host:
+            domain = self.domain or self.host.split(":")[0]
 
         if self.username and domain and "@" not in self.username:
             return f"{self.username}@{domain}"
@@ -45,7 +47,7 @@ class CustomMailApi:
             return f"{local}@{self.forced_domain}"
 
         log.warning(
-            f"{Beach.WARNING}no smtp/imap config available{Style.RESET_ALL}"
+            f"{Beach.WARNING}no imap config available{Style.RESET_ALL}"
         )
         return None
 
@@ -61,15 +63,15 @@ class CustomMailApi:
         seen = set()
 
         log.info(
-            f"{Beach.INFO}starting email polling for {Beach.PALM}{email_address}{Style.RESET_ALL}"
+            f"{Beach.INFO}starting IMAP polling for {Beach.PALM}{email_address}{Style.RESET_ALL}"
         )
 
         while time.time() - start < timeout:
             try:
                 conn = (
-                    imaplib.IMAP4_SSL(self.imap_host, self.imap_port)
+                    imaplib.IMAP4_SSL(self.host, self.port)
                     if self.use_ssl else
-                    imaplib.IMAP4(self.imap_host, self.imap_port)
+                    imaplib.IMAP4(self.host, self.port)
                 )
 
                 conn.login(self.username, self.password)
@@ -119,7 +121,10 @@ class CustomMailApi:
                         combined = (payload or "") + subject
 
                         links = re.findall(r'https?://[^\s"\'<>]+', combined)
-                        candidates = [l for l in links if ("discord.com" in l or "click.discord.com" in l)]
+                        candidates = [
+                            l for l in links
+                            if ("discord.com" in l or "click.discord.com" in l)
+                        ]
 
                         if candidates:
                             url = max(candidates, key=len)
@@ -139,7 +144,7 @@ class CustomMailApi:
                 STATS["error"] += 1
 
                 log.error(
-                    f"{Beach.CORAL}email polling error for email={email_address}{Style.RESET_ALL}"
+                    f"{Beach.CORAL}IMAP polling error for email={email_address}{Style.RESET_ALL}"
                 )
 
             time.sleep(poll_interval)

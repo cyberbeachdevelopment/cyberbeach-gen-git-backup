@@ -1,145 +1,194 @@
-# 🌊 cyberbeach x rezosolver
-v1.02
+# cyberbeach — discord account creator
 
-intrested in making a tool? contact us and recieve fair prices! no questions asked.
+v1.03
 
-[cyberbeach.cc](https://cyberbeach.cc) & [discord.gg/cyberbeach](https://discord.gg/cyberbeach)
+Need a custom tool built? Reach out and get a fair quote, no bs.
 
-## target [⭐]
-adding phone-verification at **10 stars**
+[AD] Need a custom **IMAP Mail Host** for as low as **10 USD** for a **30%** increase in **Unlock Rate**?
 
-## disclaimer
+- ![cyberbeach.cc](https://cyberbeach.cc)
+- ![discord.gg/cyberbeach](https://discord.gg/cyberbeach)
 
-for educational and research purposes only. users are responsible for how they use this.
-
-## preview
-
-[watch preview video](https://videy.co/v/?id=e8thddEX1)
-
-## discord token generator
+![CyberBeach-Gen](imgs/preview.png)
 
 ---
 
 ## features
 
-* async architecture for performance
-* multi-threaded execution
-* multi solver support (primarily rezosolver)
-* dynamic header building
-* live title updates
+- async architecture for better performance
+- multi-threaded execution
+- support for 10+ captcha solvers
+- dynamic header generation
+- live console title updates
+- optional account customization
+- optional email verification support
+- optional phone verification support
 
 ---
 
-## setup
+# setup
 
-### 1. configure `config.json`
+## 1. configure anysolver (required)
 
-edit the `config.json` file and fill in your API keys/settings.
+AnySolver is the CAPTCHA-solving backend used by this tool.
+When Cyberbeach returns anti-bot challenges, this project sends solving tasks to AnySolver and uses the returned tokens/cookies to continue its tasks.
 
-example:
+![AnySolver](imgs/anysolver_cover.png)
+
+- Create an account at [anysolver.com](https://anysolver.com)
+- Add balance
+- Create API key
+- Configure providers in priority mode
+
+(Recommended Since Update)
+
+| Rank | Provider | Status |
+|---|---|---|
+| 1 | CapLess | Recommended |
+| 2 | RezoSolver | Stable |
+| 3 | VoidSolver | Budget Option |
+
+---
+
+## 2. install dependencies
+
+Open a terminal inside the project folder and run:
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+
+## 3. configure `input/config.json`
+
+Edit `config.json` and fill in your API keys + settings.
+
+Example:
 
 ```json
 {
-    "data": {
-        "rezosolver_api_key": "your_rezosolver_api_key",
-        "anysolver_api_key": "",
-        "voidsolver_api_key": ""
+  "solver": {
+    "anysolver_api_key": "your_anysolver_api_key"
+  },
+
+  "mail": {
+    "provider": "freecustomemail",
+
+    "freecustomemail": {
+      "api_key": "your_freecustomemail_api_key"
     },
-    "mail": {
-        "freecustomemail_api_key": "your_freecustomemail_api_key",
-        "smtp": {
-            "enabled": false,
-            "host": "",
-            "imap_host": "",
-            "imap_port": 993,
-            "username": "",
-            "password": "",
-            "use_ssl": true,
-            "mailbox": "INBOX",
-            "domain": ""
-        }
-    },
-    "verification": {
-        "enabled": true
-    },
-    "customise": {
-        "hypesquad": true,
-        "pfp": true,
-        "bio": true,
-        "status": true
-    },
-    "threads": 1,
-    "debug": true
+
+    "imap": {
+      "enabled": false,
+      "host": "",
+      "port": 993,
+      "username": "",
+      "password": "",
+      "use_ssl": true,
+      "mailbox": "INBOX",
+      "domain": ""
+    }
+  },
+
+  "phone": {
+    "enabled": false,
+
+    "provider": "fivesim",
+    "fivesim": {
+        "token": "your_fivesin_api_key",
+        "country": "england",
+        "operator": "any",
+        "sms_timeout": 180,
+        "poll_interval": 3
+    }},
+
+  "verification": {
+    "enabled": true
+  },
+
+  "customise": {
+    "hypesquad": true,
+    "pfp": true,
+    "bio": true,
+    "status": true
+  },
+
+  "threads": 1,
+  "debug": true
 }
 ```
 
-### config explanation
+Below is a quick explanation of the most important settings inside `input/config.json`.
 
-#### `data`
-
-* `rezosolver_api_key` → your rezosolver API key
-* `anysolver_api_key` → optional anysolver API key
-* `razorcap_api_key` → optional razorcap API key
-
-#### `mail`
-
-* `api_key` → API key for [freecustom.email](https://www.freecustom.email/) or your mail provider
-
-#### `smtp`
-
-optional custom SMTP/IMAP mail setup:
-
-* `enabled` → enable/disable custom SMTP
-* `host` → SMTP host
-* `imap_host` → IMAP host
-* `imap_port` → IMAP port (default: 993)
-* `username` → email username
-* `password` → email password
-* `use_ssl` → use SSL connection
-* `mailbox` → mailbox folder
-* `domain` → custom mail domain
-
-#### `verification`
-
-* `enabled` → enables Discord email verification flow
-
-#### `threads`
-
-* amount of worker threads used during generation (3 recommended)
+| Section | Description |
+|---|---|
+| `data.anysolver_api_key` | Your AnySolver API key used for CAPTCHA solving |
+| `mail.provider` | Mail system to use (`freecustom.email` or `imap`) |
+| `mail.freecustomemail.api_key` | API key for FreeCustomEmail |
+| `mail.imap.*` | Your own custom mailbox settings |
+| `phone.enabled` | Enable phone verification |
+| `phone.provider` | SMS provider to use |
+| `verification.enabled` | Enables email verification |
+| `customise.*` | Enables account customisation features |
+| `threads` | Number of worker threads |
+| `debug` | Enables hidden console logging |
 
 ---
 
-### 2. configure `proxies.txt`
+## 4. configure proxies
 
-add proxies to `input/proxies.txt` using this format:
+Add proxies to:
+
+```txt
+input/proxies.txt
+```
+
+Format:
 
 ```txt
 user:pass@ip:port
 ```
 
-example:
+Example:
 
 ```txt
 john123:password123@127.0.0.1:8000
 proxyuser:mypass@192.168.1.10:9000
 ```
 
-supported proxy types depend on your provider.
+(Recommended Since Update)
+
+| Rank | Provider | Status |
+|---|---|---|
+| 1 | DataImpulse.com | Recommended |
+| 2 | NullProxies.com | Stable |
+| 3 | VaultProxies.net | Budget Option |
 
 ---
 
-### 3. configure `input/user/*` (optional)
+## 5. optional user customization
 
-* "/username.txt" - insert a list of usernames
-* "/bio.txt" - insert a list of bios
-* "/status.txt" - insert a list of status(es)
-* "/pfp/" - insert a list of profile pictures
+Inside `input/user/` you can add:
+
+```txt
+username.txt
+bio.txt
+status.txt
+```
+
+You can also place profile pictures inside:
+
+```txt
+input/user/pfp/
+```
 
 ---
 
-### 4. run the program
+## 6. start the program
 
-start the generator normally after configuring:
+Run:
 
 ```bash
 python main.py
@@ -147,33 +196,18 @@ python main.py
 
 ---
 
-## updates (1.02)
+# changelog
 
-* made customisation to be enabled or disabled in config.json
-* replaced razor.cc solver with voidsolver.tech
-* refactored account.py 
+## v1.03
 
----
-
-## access / services
-
-* mail nodes → [cyberbeach.cc](https://cyberbeach.cc/)
-* solver credits → [huzaif.online](https://huzaif.online/)
-* proxy plans → [dataimpulse.com](https://dataimpulse.com/)
-
-### mail server nodes
-
-to purchase a dedicated mail server node for unflagged token generation & avoid term waves: (beta)
-
-* [discord.gg/cyberbeach](https://discord.gg/cyberbeach)
-
-* [cyberbeach.cc](https://cyberbeach.cc)
+- converted fully to anysolver.com as solver
+- added phone verification (5sim.net)
+- polished code
 
 ---
 
-### solver credits
+# disclaimer
 
-to buy solver credits for rezosolver:
+This project is provided for educational and research purposes only.
 
-* [huzaif.online](https://huzaif.online/)
-  (sign up required, crypto accepted)
+Users are responsible for how they use this software.

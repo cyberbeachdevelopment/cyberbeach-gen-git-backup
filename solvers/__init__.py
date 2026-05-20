@@ -1,3 +1,1 @@
-"""Solvers package."""
-
-__all__ = ["huzaif", "anysolver"]
+__all__ = ["anysolver"]

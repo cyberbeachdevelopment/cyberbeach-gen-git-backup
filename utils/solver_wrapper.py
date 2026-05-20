@@ -2,8 +2,6 @@
 
 from utils.core import *
 
-from solvers.voidsolver import VoidSolverClient
-from solvers.huzaif import HuzaifClient
 from solvers.anysolver import AnySolverClient
 
 
@@ -20,8 +18,6 @@ class SolverWrapper:
     
 
     PROVIDERS = {
-        "voidsolver": VoidSolverClient,
-        "rezosolver": HuzaifClient,
         "anysolver": AnySolverClient,
     }
 

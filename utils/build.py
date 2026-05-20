@@ -89,16 +89,16 @@ def get_fingerprint(session, dcfduid, sdcfduid):
 
     if res.status_code != 200:
         raise RuntimeError(
-            f"experiments returned status={res.status_code} body={res.text[:200]}"
+            f"experiments returned status={res.status_code} error={res.text[:200]}"
         )
 
     try:
         fp = res.json().get("fingerprint")
     except ValueError as e:
-        raise RuntimeError(f"experiments non-json body={res.text[:200]}") from e
+        raise RuntimeError(f"experiments non-json error={res.text[:200]}") from e
 
     if not fp:
-        raise RuntimeError(f"experiments missing fingerprint field body={res.text[:200]}")
+        raise RuntimeError(f"experiments missing fingerprint field error={res.text[:200]}")
 
     return fp
 

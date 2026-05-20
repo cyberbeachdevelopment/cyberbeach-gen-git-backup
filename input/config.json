@@ -1,45 +1,51 @@
 {
-    "threads": 3,
-    "debug": true,
+  "solver": {
+    "anysolver_api_key": "your_anysolver_api_key"
+  },
 
-    "data": {
-        "rezosolver_api_key": "",
-        "anysolver_api_key": "",
-        "razorcap_api_key": ""
+  "mail": {
+    "provider": "freecustomemail",
+
+    "freecustomemail": {
+      "api_key": "your_freecustomemail_api_key"
     },
 
-    "verification": {
-        "enabled": true
-    },
-
-    "customise": {
-        "hypesquad": true
-    },
-
-    "mail": {
-        "freecustomemail_api_key": "",
-
-        "smtp": {
-            "enabled": false,
-
-            "server": {
-                "host": "",
-                "port": 465,
-                "use_ssl": true
-            },
-
-            "imap": {
-                "host": "",
-                "port": 993,
-                "mailbox": "INBOX"
-            },
-
-            "auth": {
-                "username": "",
-                "password": ""
-            },
-
-            "domain": ""
-        }
+    "imap": {
+      "enabled": false,
+      "host": "",
+      "port": 993,
+      "username": "",
+      "password": "",
+      "use_ssl": true,
+      "mailbox": "INBOX",
+      "domain": ""
     }
+  },
+
+    "phone": {
+    "enabled": false,
+
+    "provider": "fivesim",
+    "fivesim": {
+        "token": "your_fivesim_api_key",
+        "country": "england",
+        "operator": "any",
+        "sms_timeout": 180,
+        "poll_interval": 3
+    }
+    }, 
+
+  "verification": {
+    "enabled": true
+  },
+
+  "customise": {
+    "hypesquad": true,
+    "pfp": true,
+    "bio": true,
+    "status": true
+  },
+
+  "threads": 1,
+  "debug": true
 }

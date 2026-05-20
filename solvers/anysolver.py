@@ -23,12 +23,14 @@ class AnySolverClient:
             task["websiteKey"] = sitekey
         if proxy:
             task["proxy"] = "http://" + proxy
-        if userAgent:
-            task["userAgent"] = userAgent
+        # if userAgent:
+        #     task["userAgent"] = userAgent
         if rqdata:
             task["rqdata"] = rqdata
-        if sessionId:
-            task["sessionId"] = sessionId
+        # if sessionId:
+        #     task["sessionId"] = sessionId
+
+        # print(task)
 
         log.debug(
             f"task built sitekey={task.get('websiteKey')} "
@@ -81,6 +83,8 @@ class AnySolverClient:
                     json={"clientKey": self.api_key, "taskId": task_id},
                     timeout=30
                 ).json()
+
+                # print(result)
 
                 status = result.get("status")
 

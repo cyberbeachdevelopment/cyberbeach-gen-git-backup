@@ -1,14 +1,28 @@
 # cyberbeach.cc & discord.gg/cyberbeach
 
 from .free import TempTfMailApi
-from .custom import CustomMailApi
+from .custom import ImapMailApi
 
 
 def get_mail_api(config: dict, logger=None):
     mail_cfg = config.get("mail", {}) if isinstance(config, dict) else {}
-    smtp_cfg = mail_cfg.get("smtp", {}) if isinstance(mail_cfg, dict) else {}
-    if smtp_cfg.get("enabled"):
-        return CustomMailApi(logger=logger, smtp_config=smtp_cfg), "custom"
-    return TempTfMailApi(logger=logger, api_key=mail_cfg.get("api_key")), "free"
+
+    provider = (mail_cfg.get("provider") or "freecustomemail").lower()
+
+    if provider == "imap":
+        imap_cfg = mail_cfg.get("imap", {}) if isinstance(mail_cfg, dict) else {}
+        return ImapMailApi(logger=logger, imap_config=imap_cfg), "imap"
+
+    if provider == "freecustomemail":
+        free_cfg = mail_cfg.get("freecustomemail", {}) if isinstance(mail_cfg, dict) else {}
+        return TempTfMailApi(
+            logger=logger,
+            api_key=free_cfg.get("api_key"),
+        ), "freecustomemail"
+
+    # fallback
+    free_cfg = mail_cfg.get("freecustomemail", {}) if isinstance(mail_cfg, dict) else {}
+    return TempTfMailApi(logger=logger, api_key=free_cfg.get("api_key")), "freecustomemail"
+
 
 __all__ = ["TempTfMailApi", "CustomMailApi", "get_mail_api"]

@@ -1,4 +1,4 @@
-# credits to someone on github lol
+# credits to someone on github lol, not made by cyberbeach
 
 import os, threading
 

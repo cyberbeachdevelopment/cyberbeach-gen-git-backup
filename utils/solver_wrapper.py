@@ -42,8 +42,9 @@ class SolverWrapper:
         )
 
         log.debug(
-    f"solver wrapper initialized provider={provider}"
-)
+            f"Solver wrapper initialized {Beach.FOAM}→{Style.RESET_ALL} "
+            f"provider={Beach.OCEAN}{provider}{Style.RESET_ALL}"
+        )
 
     def solve(
         self,

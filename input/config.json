@@ -22,18 +22,28 @@
     }
   },
 
-    "phone": {
+  "phone": {
     "enabled": false,
+    "provider": "herosms_or_vaksms",
 
-    "provider": "fivesim",
-    "fivesim": {
-        "token": "your_fivesim_api_key",
-        "country": "england",
-        "operator": "any",
-        "sms_timeout": 180,
-        "poll_interval": 3
+    "vaksms": {
+      "api_key": "",
+      "service": "ds",
+      "country": "uk",
+      "operator": null,
+      "sms_timeout": 180,
+      "poll_interval": 3
+    },
+
+    "herosms": {
+      "api_key": "",
+      "service": "ds",
+      "country": 16,
+      "operator": null,
+      "sms_timeout": 180,
+      "poll_interval": 3
     }
-    }, 
+  },  
 
   "verification": {
     "enabled": true

@@ -1,12 +1,6 @@
 # cyberbeach.cc & discord.gg/cyberbeach
 
-import asyncio
-import sys
-import random
-import time
-import threading
-import os
-import string
+import asyncio, sys, random, time, threading, os, string
 
 from pathlib import Path
 from colorama import Style
@@ -51,18 +45,19 @@ show_banner()
 
 
 SOLVERS = {
-    "rezosolver": {"name": "RezoSolver",   "key": "rezosolver_api_key"},
-    "anysolver":  {"name": "AnySolver.io", "key": "anysolver_api_key"},
-    "voidsolver": {"name": "VoidSolver",   "key": "voidsolver_api_key"},
+    "anysolver":  {"name": "anysolver", "key": "anysolver_api_key"},
 }
 
 PHONE_PROVIDERS = {
-    "fivesim": {
-        "name": "5sim.net",
+    "vaksms": {
+        "name": "vak-sms",
 
-        "required_fields": ["token"],
+        "required_fields": [("api_key", "token")],
     },
-    # add more here later
+    "herosms": {
+        "name": "hero-sms",
+        "required_fields": [("api_key", "token")],
+    },
 }
 
 
@@ -101,16 +96,26 @@ def check_structure():
 
     "phone": {
     "enabled": false,
+    "provider": "herosms_or_vaksms",
 
-    "provider": "fivesim",
-    "fivesim": {
-        "token": "your_fivesim_api_key",
-        "country": "england",
-        "operator": "any",
-        "sms_timeout": 180,
-        "poll_interval": 3
+    "vaksms": {
+      "api_key": "",
+      "service": "ds",
+      "country": "uk",
+      "operator": null,
+      "sms_timeout": 180,
+      "poll_interval": 3
+    },
+
+    "herosms": {
+      "api_key": "",
+      "service": "ds",
+      "country": 16,
+      "operator": null,
+      "sms_timeout": 180,
+      "poll_interval": 3
     }
-    }, 
+  }, 
 
   "verification": {
     "enabled": true
@@ -141,15 +146,19 @@ def check_structure():
     for folder in required_folders:
         if not os.path.exists(folder):
             os.makedirs(folder, exist_ok=True)
-            log.info(f"{Beach.INFO}created folder={folder}{Style.RESET_ALL}")
+            log.info(
+                f"Created folder {Beach.FOAM}→{Style.RESET_ALL} "
+                f"{Beach.OCEAN}{folder}{Style.RESET_ALL}"
+            )
 
     for file_path, default_content in required_files.items():
         if not os.path.exists(file_path):
             with open(file_path, "w", encoding="utf-8") as f:
                 f.write(default_content)
-            log.info(f"{Beach.INFO}created file={file_path}{Style.RESET_ALL}")
-
-    log.info(f"{Beach.INFO}structure check complete{Style.RESET_ALL}")
+            log.info(
+                f"Created file {Beach.FOAM}→{Style.RESET_ALL} "
+                f"{Beach.OCEAN}{file_path}{Style.RESET_ALL}"
+            )
 
 
 check_structure()
@@ -173,7 +182,9 @@ def load_profile():
                 ]
                 return random.choice(lines) if lines else None
         except Exception as e:
-            log.debug(f"read_random_line({file_path}) failed: {e}")
+            log.error(
+                f"{Beach.ERROR}error={type(e).__name__}: {e}{Style.RESET_ALL}"
+            )
         return None
 
     username = read_random_line(username_file)
@@ -192,7 +203,9 @@ def load_profile():
             if images:
                 pfp = random.choice(images)
     except Exception as e:
-        log.debug(f"pfp scan failed: {e}")
+        log.error(
+            f"{Beach.ERROR}error={type(e).__name__}: {e}{Style.RESET_ALL}"
+        )
 
     # random password
     password = "".join(
@@ -205,13 +218,13 @@ def load_profile():
         )
 
     log.info(
-        f"{Beach.INFO}profile loader "
-        f"username={username or 'None'} "
-        f"bio={bio or 'None'} "
-        f"status={status or 'None'} "
-        f"pfp={pfp or 'None'} "
-        f"password={password}{Style.RESET_ALL}"
+        f"Profile loaded {Beach.FOAM}→{Style.RESET_ALL} "
+        f"{Beach.OCEAN}{username or '∅'}{Style.RESET_ALL}"
     )
+    log.debug(f"  ├─ bio      = {bio or '∅'}")
+    log.debug(f"  ├─ status   = {status or '∅'}")
+    log.debug(f"  ├─ pfp      = {pfp or '∅'}")
+    log.debug(f"  └─ password = {password}")
 
     return username, bio, status, pfp, password
 
@@ -226,12 +239,24 @@ def select_solver():
             available.append((slug, api_key))
 
     if not available:
-        log.warning(f"{Beach.WARNING}api key missing: no solver configured{Style.RESET_ALL}")
+        log.warning(f"API key missing {Beach.FOAM}→{Style.RESET_ALL} no solver configured")
         sys.exit(1)
 
     slug, api_key = random.choice(available) if len(available) > 1 else available[0]
-    log.info(f"{Beach.INFO}solver={SOLVERS[slug]['name']}{Style.RESET_ALL}")
+    log.info(f"Solver {Beach.FOAM}→{Style.RESET_ALL} {Beach.OCEAN}{SOLVERS[slug]['name']}{Style.RESET_ALL}")
     return slug, api_key
+
+
+def _has_required(sub: dict, required_fields) -> bool:
+    for field in required_fields:
+        if isinstance(field, (list, tuple)):
+            # group
+            if not any(sub.get(f) for f in field):
+                return False
+        else:
+            if not sub.get(field):
+                return False
+    return True
 
 
 def select_phone_provider():
@@ -240,34 +265,35 @@ def select_phone_provider():
     if not phone_cfg.get("enabled", False):
         return None, phone_cfg
 
-    # auto or manual
     requested = (phone_cfg.get("provider") or "").lower().strip()
 
     available = []
     for slug, meta in PHONE_PROVIDERS.items():
         sub = phone_cfg.get(slug, {}) or {}
-        if all(sub.get(field) for field in meta["required_fields"]):
+        if _has_required(sub, meta["required_fields"]):
             available.append(slug)
 
     if not available:
         log.warning(
-            f"{Beach.WARNING}phone enabled but no provider configured "
-            f"(set credentials under config.phone.<provider>){Style.RESET_ALL}"
+            f"Phone enabled but no provider configured {Beach.FOAM}→{Style.RESET_ALL} "
+            f"{Beach.SAND}set credentials under {Beach.OCEAN}config.phone.<provider>{Style.RESET_ALL}"
         )
         return None, {**phone_cfg, "enabled": False}
 
     if requested:
         if requested not in PHONE_PROVIDERS:
             log.warning(
-                f"{Beach.WARNING}phone provider '{requested}' not supported, "
-                f"supported={list(PHONE_PROVIDERS)}{Style.RESET_ALL}"
+                f"Phone provider {Beach.OCEAN}{requested}{Style.RESET_ALL} not supported "
+                f"{Beach.FOAM}→{Style.RESET_ALL} "
+                f"supported={Beach.OCEAN}{list(PHONE_PROVIDERS)}{Style.RESET_ALL}"
             )
             return None, {**phone_cfg, "enabled": False}
 
         if requested not in available:
             log.warning(
-                f"{Beach.WARNING}phone provider '{requested}' missing required fields, "
-                f"available={available}{Style.RESET_ALL}"
+                f"Phone provider {Beach.OCEAN}{requested}{Style.RESET_ALL} missing required fields "
+                f"{Beach.FOAM}→{Style.RESET_ALL} "
+                f"available={Beach.OCEAN}{available}{Style.RESET_ALL}"
             )
             return None, {**phone_cfg, "enabled": False}
 
@@ -275,9 +301,11 @@ def select_phone_provider():
     else:
         chosen = random.choice(available) if len(available) > 1 else available[0]
 
-    log.info(f"{Beach.INFO}phone={PHONE_PROVIDERS[chosen]['name']}{Style.RESET_ALL}")
+    log.info(
+        f"Phone provider {Beach.FOAM}→{Style.RESET_ALL} "
+        f"{Beach.OCEAN}{PHONE_PROVIDERS[chosen]['name']}{Style.RESET_ALL}"
+    )
 
-    # sees provider explicitly
     resolved = {**phone_cfg, "enabled": True, "provider": chosen}
     return chosen, resolved
 
@@ -301,8 +329,8 @@ async def main():
             email = await asyncio.to_thread(mail_api.create_account)
             if not email:
                 log.warning(
-                    f"{Beach.WARNING}failed to create email "
-                    f"provider={provider}{Style.RESET_ALL}"
+                    f"Failed to create email {Beach.FOAM}→{Style.RESET_ALL} "
+                    f"provider={Beach.OCEAN}{provider}{Style.RESET_ALL}"
                 )
                 return
 

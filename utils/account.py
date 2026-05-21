@@ -11,12 +11,7 @@ from utils.core import STATS, format_status, Beach, format_token_id, setup_logge
 from urllib.parse import urlparse
 from utils.build import get_build_number, build_super_properties, fetch_cookies, get_fingerprint, build_headers, USER_AGENT, CHROME_VERSION
 from utils.solver_wrapper import SolverWrapper
-from utils.phone.fivesim import (
-    FiveSimClient,
-    FiveSimError,
-    FiveSimNoNumbersError,
-    FiveSimTimeoutError,
-)
+from utils.phone_wrapper import PhoneWrapper
 
 log = setup_logger(__name__)
 
@@ -30,8 +25,6 @@ CAPTCHA_HEADERS = ("x-captcha-key", "x-captcha-rqtoken", "x-captcha-session-id")
 def check_token_status(session):
     try:
         r = session.get(f"{API}/users/@me")
-
-        log.debug(r.text) # temp
 
         if r.status_code != 200:
             return "invalid"
@@ -85,7 +78,7 @@ def save_account(email, password, token, token_status, logger=None):
         f.write(f"{email}:{password}:{token}\n")
 
 
-# credits to someone on github lol
+# credits to someone on github lol, not made by cyberbeach
 class BackgroundOnliner:
     
     def __init__(self, token):
@@ -147,8 +140,8 @@ def encode_image(path: str) -> str | None:
 
     except Exception as e:
         log.error(
-            f"{Beach.WARNING}image encode failed error={e}{Style.RESET_ALL}"
-        )
+                f"{Beach.ERROR}error={type(e).__name__}: {e}{Style.RESET_ALL}"
+            )
         return None
 
 
@@ -166,15 +159,16 @@ def fetch_dicebear_avatar() -> str | None:
         encoded = base64.b64encode(r.content).decode()
 
         log.info(
-            f"{Beach.INFO}pfp fallback used=dicebear{Style.RESET_ALL}"
+            f"PFP fallback {Beach.FOAM}→{Style.RESET_ALL} "
+            f"used={Beach.OCEAN}dicebear{Style.RESET_ALL}"
         )
 
         return f"data:image/png;base64,{encoded}"
 
     except Exception as e:
         log.error(
-            f"{Beach.WARNING}dicebear fallback failed error={e}{Style.RESET_ALL}"
-        )
+                f"{Beach.ERROR}error={type(e).__name__}: {e}{Style.RESET_ALL}"
+            )
         return None
 
 
@@ -183,15 +177,12 @@ def discord_patch(session, endpoint, payload, success_msg=None):
         r = session.patch(f"{API}{endpoint}", json=payload)
         r.raise_for_status()
 
-        if success_msg:
-            log.info(success_msg)
-
         return True
 
     except Exception as e:
         log.error(
-            f"{Beach.WARNING}request failed endpoint={endpoint} error={e}{Style.RESET_ALL}"
-        )
+                f"{Beach.ERROR}error={type(e).__name__}: {e}{Style.RESET_ALL}"
+            )
         return False
 
 
@@ -211,7 +202,7 @@ def apply_profile(
             session,
             "/users/@me/profile",
             {"bio": bio},
-            f"{Beach.INFO}bio updated={Beach.PALM}{bio[:30]}{Style.RESET_ALL}"
+            f"Bio updated {Beach.FOAM}→{Style.RESET_ALL} {Beach.OCEAN}{bio[:30]}{Style.RESET_ALL}"
         )
 
     # custom status
@@ -220,7 +211,7 @@ def apply_profile(
             session,
             "/users/@me/settings",
             {"custom_status": {"text": status}},
-            f"{Beach.INFO}status updated={Beach.PALM}{status[:30]}{Style.RESET_ALL}"
+            f"Status updated {Beach.FOAM}→{Style.RESET_ALL} {Beach.OCEAN}{status[:30]}{Style.RESET_ALL}"
         )
 
     # hypesquad
@@ -235,12 +226,12 @@ def apply_profile(
             )
             r.raise_for_status()
             log.info(
-                f"{Beach.INFO}hypesquad updated="
-                f"{Beach.PALM}{houses[house_id]}{Style.RESET_ALL}"
+                f"Hypesquad updated {Beach.FOAM}→{Style.RESET_ALL} "
+                f"{Beach.OCEAN}{houses[house_id]}{Style.RESET_ALL}"
             )
         except Exception as e:
             log.error(
-                f"{Beach.WARNING}hypesquad failed error={e}{Style.RESET_ALL}"
+                f"{Beach.ERROR}error={type(e).__name__}: {e}{Style.RESET_ALL}"
             )
 
     # avatar
@@ -251,8 +242,8 @@ def apply_profile(
             avatar_data = encode_image(pfp)
             if avatar_data:
                 log.info(
-                    f"{Beach.INFO}pfp loaded="
-                    f"{Beach.PALM}{os.path.basename(pfp)}{Style.RESET_ALL}"
+                    f"PFP loaded {Beach.FOAM}→{Style.RESET_ALL} "
+                    f"{Beach.OCEAN}{os.path.basename(pfp)}{Style.RESET_ALL}"
                 )
 
         avatar_data = avatar_data or fetch_dicebear_avatar()
@@ -262,7 +253,7 @@ def apply_profile(
                 session,
                 "/users/@me",
                 {"avatar": avatar_data},
-                f"{Beach.INFO}pfp applied successfully{Style.RESET_ALL}"
+                f"PFP applied {Beach.FOAM}→{Style.RESET_ALL} {Beach.OCEAN}success{Style.RESET_ALL}"
             )
 
 
@@ -313,12 +304,19 @@ def _post_json(session, url, payload, retries=1, backoff=1.0):
             if attempt < retries:
                 time.sleep(backoff)
     if last_exc:
-        log.debug(f"_post_json failed: {type(last_exc).__name__}: {last_exc}")
+        log.debug(
+            f"POST JSON failed {Beach.FOAM}→{Style.RESET_ALL} "
+            f"type={Beach.OCEAN}{type(last_exc).__name__}{Style.RESET_ALL} "
+            f"error={Beach.CORAL}{last_exc}{Style.RESET_ALL}"
+        )
     return None, None
 
 
 def _solve_captcha(solver_type, solver_api_key, rqdata, proxy, email):
-    log.info(f"{Beach.INFO}solving captcha: email={Beach.PALM}{email}{Style.RESET_ALL}")
+    log.info(
+        f"Solving captcha {Beach.FOAM}→{Style.RESET_ALL} "
+        f"email={Beach.OCEAN}{email}{Style.RESET_ALL}"
+    )
     start = time.time()
     try:
         cap_token = SolverWrapper(solver_type, solver_api_key).solve(
@@ -335,14 +333,14 @@ def _solve_captcha(solver_type, solver_api_key, rqdata, proxy, email):
 
     if not cap_token:
         log.warning(
-            f"{Beach.WARNING}no captcha available: "
-            f"captcha_token={cap_token}{Style.RESET_ALL}"
+            f"No captcha available {Beach.FOAM}→{Style.RESET_ALL} "
+            f"captcha_token={Beach.SAND}{cap_token}{Style.RESET_ALL}"
         )
         return None, None
 
     log.info(
-        f"{Beach.INFO}captcha solved "
-        f"({Beach.PALM}{time.time() - start:.1f}s{Style.RESET_ALL})"
+        f"Captcha solved {Beach.FOAM}→{Style.RESET_ALL} "
+        f"{Beach.PALM}{time.time() - start:.1f}s{Style.RESET_ALL}"
     )
     return cap_token, None
 
@@ -370,50 +368,82 @@ def _finalize(session, email, password, auth_token, onliner, logger, status=None
     onliner.stop()
 
 
+### phone shit ###
+
+
 def _do_phone_verification(session, proxy, phone_cfg, solver_type, solver_api_key, email):
-    provider = (phone_cfg.get("provider") or "fivesim").lower()
-    if provider != "fivesim":
+    if not phone_cfg.get("enabled", False):
+        return False
+
+    provider = (phone_cfg.get("provider") or "vaksms").lower()
+    if provider not in PhoneWrapper.PROVIDERS:
         log.warning(
-            f"{Beach.WARNING}phone provider not supported: {provider}{Style.RESET_ALL}"
+            f"Phone provider not supported {Beach.FOAM}→{Style.RESET_ALL} "
+            f"provider={Beach.SAND}{provider}{Style.RESET_ALL}"
         )
         return False
 
-    fs_cfg = phone_cfg.get("fivesim", {}) or {}
-    token = fs_cfg.get("token")
-    if not token:
-        log.warning(f"{Beach.WARNING}phone: fivesim token missing in config{Style.RESET_ALL}")
+    sub_cfg = phone_cfg.get(provider, {}) or {}
+    api_key = sub_cfg.get("api_key") or sub_cfg.get("token")
+    if not api_key:
+        log.warning(
+            f"Phone api_key/token missing in config {Beach.FOAM}→{Style.RESET_ALL} "
+            f"provider={Beach.SAND}{provider}{Style.RESET_ALL}"
+        )
         return False
 
-    client = FiveSimClient(
-        api_token=token,
-        product="discord",
-        country=fs_cfg.get("country", "england"),
-        operator=fs_cfg.get("operator", "any"),
-    )
+    # per-provider sensible country default
+    default_country = 0 if provider == "herosms" else "ru"
 
-    sms_timeout   = float(fs_cfg.get("sms_timeout", 180))
-    poll_interval = float(fs_cfg.get("poll_interval", 3))
+    try:
+        client = PhoneWrapper(
+            provider=provider,
+            api_key=api_key,
+            service=sub_cfg.get("service", "ds"),
+            country=sub_cfg.get("country", default_country),
+            operator=sub_cfg.get("operator"),
+            sms_timeout=float(sub_cfg.get("sms_timeout", 180)),
+            poll_interval=float(sub_cfg.get("poll_interval", 3)),
+        )
+    except ValueError as e:
+        log.error(
+                f"{Beach.ERROR}error={type(e).__name__}: {e}{Style.RESET_ALL}"
+            )
+        return False
+
+    # provider-specific "no numbers" errors — caught as a tuple so the rest of the flow stays generic
+    no_numbers_excs = _no_numbers_excs_for(provider)
+    base_excs       = _base_excs_for(provider)
 
     # buy a number
     try:
         order = client.buy_number()
-    except FiveSimNoNumbersError:
-        log.warning(f"{Beach.WARNING}phone: no numbers in stock{Style.RESET_ALL}")
+    except no_numbers_excs:
+        log.warning(f"Phone has no numbers in stock {Beach.FOAM}→{Style.RESET_ALL} {Beach.SAND}empty pool{Style.RESET_ALL}")
         return False
-    except FiveSimError as e:
-        log.error(f"{Beach.WARNING}phone: buy failed error={e}{Style.RESET_ALL}")
+    except base_excs as e:
+        log.error(
+                f"{Beach.ERROR}error={type(e).__name__}: {e}{Style.RESET_ALL}"
+            )
         return False
 
     order_id = order.get("id")
     phone    = order.get("phone")
     if not order_id or not phone:
-        log.warning(f"{Beach.WARNING}phone: bad order response {order}{Style.RESET_ALL}")
-        # no order_id
+        log.warning(
+            f"Phone bad order response {Beach.FOAM}→{Style.RESET_ALL} "
+            f"order={Beach.SAND}{order}{Style.RESET_ALL}"
+        )
         return False
 
+    # discord wants E.164 with leading '+'; vak-sms/hero-sms return digits only
+    phone_e164 = phone if str(phone).startswith("+") else f"+{phone}"
+
     log.info(
-        f"{Beach.INFO}phone bought={Beach.PALM}{phone}{Style.RESET_ALL} "
-        f"id={Beach.SAND}{order_id}{Style.RESET_ALL}"
+        f"Phone bought {Beach.FOAM}→{Style.RESET_ALL} "
+        f"{Beach.PALM}{phone_e164}{Style.RESET_ALL} "
+        f"id={Beach.OCEAN}{order_id}{Style.RESET_ALL} "
+        f"provider={Beach.OCEAN}{provider}{Style.RESET_ALL}"
     )
 
     success = False
@@ -422,7 +452,7 @@ def _do_phone_verification(session, proxy, phone_cfg, solver_type, solver_api_ke
         attach_res, attach_json = _post_json(
             session,
             f"{API}/users/@me/phone",
-            {"phone": phone},
+            {"phone": phone_e164},
             retries=1,
         )
         attach_json = attach_json or {}
@@ -433,7 +463,10 @@ def _do_phone_verification(session, proxy, phone_cfg, solver_type, solver_api_ke
                 attach_json.get("captcha_rqdata", ""), proxy, email,
             )
             if not cap_token:
-                log.warning(f"{Beach.WARNING}phone: captcha failed err={err}{Style.RESET_ALL}")
+                log.warning(
+                    f"Phone captcha failed {Beach.FOAM}→{Style.RESET_ALL} "
+                    f"error={Beach.CORAL}{err}{Style.RESET_ALL}"
+                )
                 return False
 
             _apply_captcha_headers(
@@ -443,43 +476,46 @@ def _do_phone_verification(session, proxy, phone_cfg, solver_type, solver_api_ke
                 attach_json.get("captcha_session_id"),
             )
             attach_res, attach_json = _post_json(
-                session, f"{API}/users/@me/phone", {"phone": phone},
+                session, f"{API}/users/@me/phone", {"phone": phone_e164},
             )
             attach_json = attach_json or {}
             _clear_captcha_headers(session)
 
         if attach_res is None or attach_res.status_code >= 400:
             log.warning(
-                f"{Beach.WARNING}phone: attach rejected "
-                f"status={getattr(attach_res, 'status_code', '?')} error={attach_json}"
-                f"{Style.RESET_ALL}"
+                f"Phone attach rejected {Beach.FOAM}→{Style.RESET_ALL} "
+                f"status={Beach.SAND}{getattr(attach_res, 'status_code', '?')}{Style.RESET_ALL} "
+                f"error={Beach.CORAL}{attach_json}{Style.RESET_ALL}"
             )
             return False
 
         verification_token = attach_json.get("verification_token")
         if not verification_token:
             log.warning(
-                f"{Beach.WARNING}phone: no verification_token in response {attach_json}"
-                f"{Style.RESET_ALL}"
+                f"Phone no verification_token in response {Beach.FOAM}→{Style.RESET_ALL} "
+                f"response={Beach.SAND}{attach_json}{Style.RESET_ALL}"
             )
             return False
 
         # wait for SMS
         try:
-            code = client.wait_for_code(
-                order_id, timeout=sms_timeout, poll_interval=poll_interval
+            code = client.wait_for_code(order_id)
+        except _timeout_excs_for(provider):
+            log.warning(
+                f"Phone SMS timeout {Beach.FOAM}→{Style.RESET_ALL} "
+                f"{Beach.SAND}refunded{Style.RESET_ALL}"
             )
-        except FiveSimTimeoutError:
-            # refund
-            log.warning(f"{Beach.WARNING}phone: sms timeout, refunded{Style.RESET_ALL}")
             return False
-        except FiveSimError as e:
-            log.error(f"{Beach.WARNING}phone: sms error={e}{Style.RESET_ALL}")
-            _safe_ban(client, order_id)
+        except base_excs as e:
+            log.error(
+                f"{Beach.ERROR}error={type(e).__name__}: {e}{Style.RESET_ALL}"
+            )
+            _safe_cancel(client, order_id)
             return False
 
         log.info(
-            f"{Beach.INFO}phone code received={Beach.PALM}{code}{Style.RESET_ALL}"
+            f"Phone code received {Beach.FOAM}→{Style.RESET_ALL} "
+            f"{Beach.PALM}{code}{Style.RESET_ALL}"
         )
 
         # submit code to discord
@@ -493,20 +529,20 @@ def _do_phone_verification(session, proxy, phone_cfg, solver_type, solver_api_ke
 
         if verify_res is None or verify_res.status_code >= 400:
             log.warning(
-                f"{Beach.WARNING}phone: verify rejected "
-                f"status={getattr(verify_res, 'status_code', '?')} error={verify_json}"
-                f"{Style.RESET_ALL}"
+                f"Phone verify rejected {Beach.FOAM}→{Style.RESET_ALL} "
+                f"status={Beach.SAND}{getattr(verify_res, 'status_code', '?')}{Style.RESET_ALL} "
+                f"error={Beach.CORAL}{verify_json}{Style.RESET_ALL}"
             )
-            _safe_ban(client, order_id)
+            _safe_cancel(client, order_id)
             return False
 
         phone_token = verify_json.get("token")
         if not phone_token:
             log.warning(
-                f"{Beach.WARNING}phone: no token after verify {verify_json}"
-                f"{Style.RESET_ALL}"
+                f"Phone no token after verify {Beach.FOAM}→{Style.RESET_ALL} "
+                f"response={Beach.SAND}{verify_json}{Style.RESET_ALL}"
             )
-            _safe_ban(client, order_id)
+            _safe_cancel(client, order_id)
             return False
 
         # bind verified phone to account
@@ -520,16 +556,16 @@ def _do_phone_verification(session, proxy, phone_cfg, solver_type, solver_api_ke
 
         if bind_res is None or bind_res.status_code >= 400:
             log.warning(
-                f"{Beach.WARNING}phone: bind rejected "
-                f"status={getattr(bind_res, 'status_code', '?')} body={bind_json}"
-                f"{Style.RESET_ALL}"
+                f"Phone bind rejected {Beach.FOAM}→{Style.RESET_ALL} "
+                f"status={Beach.SAND}{getattr(bind_res, 'status_code', '?')}{Style.RESET_ALL} "
+                f"body={Beach.CORAL}{bind_json}{Style.RESET_ALL}"
             )
-            _safe_ban(client, order_id)
+            _safe_cancel(client, order_id)
             return False
 
         log.info(
-            f"{Beach.INFO}phone verified & bound="
-            f"{Beach.PALM}{phone}{Style.RESET_ALL}"
+            f"Phone verified & bound {Beach.FOAM}→{Style.RESET_ALL} "
+            f"{Beach.PALM}{phone_e164}{Style.RESET_ALL}"
         )
         _safe_finish(client, order_id)
         success = True
@@ -537,57 +573,100 @@ def _do_phone_verification(session, proxy, phone_cfg, solver_type, solver_api_ke
 
     finally:
         if not success:
-            _refund_or_ban(client, order_id)
+            _refund_or_cancel(client, order_id)
 
 
-def _refund_or_ban(client, order_id):
-    # incase number fails
+def _no_numbers_excs_for(provider: str) -> tuple:
+    if provider == "vaksms":
+        from utils.phone.vaksms import VakSmsNoNumbersError
+        return (VakSmsNoNumbersError,)
+    if provider == "herosms":
+        from utils.phone.herosms import HeroSmsNoNumbersError
+        return (HeroSmsNoNumbersError,)
+    return ()
+
+
+def _timeout_excs_for(provider: str) -> tuple:
+    if provider == "vaksms":
+        from utils.phone.vaksms import VakSmsTimeoutError
+        return (VakSmsTimeoutError,)
+    if provider == "herosms":
+        from utils.phone.herosms import HeroSmsTimeoutError
+        return (HeroSmsTimeoutError,)
+    return ()
+
+
+def _base_excs_for(provider: str) -> tuple:
+    if provider == "vaksms":
+        from utils.phone.vaksms import VakSmsError
+        return (VakSmsError,)
+    if provider == "herosms":
+        from utils.phone.herosms import HeroSmsError
+        return (HeroSmsError,)
+    return (Exception,)
+
+
+def _refund_or_cancel(client: "PhoneWrapper", order_id):
+    sms_already_received = False
     try:
-        order = client.check_order(order_id)
-        sms_list = order.get("sms") or []
+        # both wrappers
+        order = client.client.check_order(order_id)
+        if isinstance(order, dict):
+            # 5sim style
+            if order.get("sms"):
+                sms_already_received = True
+            # vak-sms / hero-sms style
+            if order.get("smsCode") or order.get("code"):
+                sms_already_received = True
+            if (order.get("status") or "").lower() in ("ok", "send", "status_ok"):
+                sms_already_received = True
     except Exception as e:
-        log.debug(f"5sim check before refund failed: {e}")
-        sms_list = []
+        log.debug(
+            f"Pre-cancel check failed {Beach.FOAM}→{Style.RESET_ALL} "
+            f"provider={Beach.OCEAN}{client.provider}{Style.RESET_ALL} "
+            f"error={Beach.CORAL}{e}{Style.RESET_ALL}"
+        )
 
-    if sms_list:
-        log.debug(f"5sim order {order_id}: sms already received, banning instead of cancelling")
-        _safe_ban(client, order_id)
+    if sms_already_received:
+        log.debug(
+            f"SMS already received, finishing instead of cancelling {Beach.FOAM}→{Style.RESET_ALL} "
+            f"provider={Beach.OCEAN}{client.provider}{Style.RESET_ALL} "
+            f"order={Beach.OCEAN}{order_id}{Style.RESET_ALL}"
+        )
+        _safe_finish(client, order_id)
         return
 
     try:
         client.cancel_order(order_id)
         log.info(
-            f"{Beach.INFO}phone refunded "
-            f"id={Beach.SAND}{order_id}{Style.RESET_ALL}"
+            f"Phone refunded {Beach.FOAM}→{Style.RESET_ALL} "
+            f"id={Beach.OCEAN}{order_id}{Style.RESET_ALL}"
         )
-    except FiveSimError as e:
-
-        log.debug(f"5sim cancel failed, falling back to ban: {e}")
-        _safe_ban(client, order_id)
     except Exception as e:
-        log.debug(f"5sim cancel raised: {e}")
-        _safe_ban(client, order_id)
+        log.error(
+                f"{Beach.ERROR}error={type(e).__name__}: {e}{Style.RESET_ALL}"
+            )
 
 
-def _safe_finish(client, order_id):
+def _safe_finish(client: "PhoneWrapper", order_id):
     try:
         client.finish_order(order_id)
     except Exception as e:
-        log.debug(f"5sim finish failed: {e}")
+        log.error(
+                f"{Beach.ERROR}error={type(e).__name__}: {e}{Style.RESET_ALL}"
+            )
 
 
-def _safe_cancel(client, order_id):
+def _safe_cancel(client: "PhoneWrapper", order_id):
     try:
         client.cancel_order(order_id)
     except Exception as e:
-        log.debug(f"5sim cancel failed: {e}")
+        log.error(
+                f"{Beach.ERROR}error={type(e).__name__}: {e}{Style.RESET_ALL}"
+            )
 
 
-def _safe_ban(client, order_id):
-    try:
-        client.ban_order(order_id)
-    except Exception as e:
-        log.debug(f"5sim ban failed: {e}")
+### phone shit ###
 
 
 def reg(
@@ -617,9 +696,9 @@ def reg(
     
     # setup
     log.info(
-        f"{Beach.INFO}worker [ {current_num} ] started "
-        f"proxy={Beach.SAND}{proxy.split('@')[-1] if proxy else 'direct'}{Style.RESET_ALL} "
-        f"email={Beach.PALM}{email}{Style.RESET_ALL}"
+        f"Worker {Beach.OCEAN}[{current_num}]{Style.RESET_ALL} started {Beach.FOAM}→{Style.RESET_ALL} "
+        f"proxy={Beach.OCEAN}{proxy.split('@')[-1] if proxy else 'direct'}{Style.RESET_ALL} "
+        f"email={Beach.OCEAN}{email}{Style.RESET_ALL}"
     )
 
     session = StealthSession()
@@ -631,7 +710,9 @@ def reg(
         dcfduid, sdcfduid = fetch_cookies(session)
         fingerprint = get_fingerprint(session, dcfduid, sdcfduid)
     except Exception as e:
-        log.error(f"{Beach.WARNING}fingerprint failed: error={e}{Style.RESET_ALL}")
+        log.error(
+                f"{Beach.ERROR}error={type(e).__name__}: {e}{Style.RESET_ALL}"
+            )
         return
 
     build_num = get_build_number(proxy)
@@ -669,15 +750,17 @@ def reg(
     _, res_json = _post_json(session, REGISTER_URL, register_payload)
     if not res_json:
         STATS["error"] += 1
-        log.error(f"{Beach.ERROR}register request failed{Style.RESET_ALL}")
+        log.error(
+            f"Register request failed {Beach.FOAM}✗{Style.RESET_ALL}"
+        )
         return
 
     captcha_rqdata = res_json.get("captcha_rqdata")
     if not res_json.get("captcha_sitekey") or not captcha_rqdata:
         log.warning(
-            f"{Beach.WARNING}no captcha available: "
-            f"captcha_sitekey={res_json.get('captcha_sitekey')} "
-            f"captcha_rqdata={captcha_rqdata}{Style.RESET_ALL}"
+            f"No captcha available {Beach.FOAM}→{Style.RESET_ALL} "
+            f"sitekey={Beach.OCEAN}{res_json.get('captcha_sitekey')}{Style.RESET_ALL} "
+            f"rqdata={Beach.OCEAN}{captcha_rqdata}{Style.RESET_ALL}"
         )
         return
 
@@ -699,25 +782,30 @@ def reg(
     response, res_data = _post_json(session, REGISTER_URL, register_payload, retries=2)
     if not res_data:
         STATS["error"] += 1
-        log.error(f"{Beach.ERROR}register-with-captcha failed{Style.RESET_ALL}")
+        log.error(
+            f"Register with captcha failed {Beach.FOAM}✗{Style.RESET_ALL}"
+        )
         return
 
-    if response is not None:
-        try:
-            log.debug(response.text[:500])
-        except Exception:
-            pass
+    # if response is not None:
+    #     try:
+    #         log.debug(response.text[:500])
+    #     except Exception:
+    #         pass
 
     auth_token = res_data.get("token")
     if not auth_token:
         STATS["error"] += 1
-        log.error(f"{Beach.ERROR}error={res_data}{Style.RESET_ALL}")
+        log.error(
+            f"Error {Beach.FOAM}→{Style.RESET_ALL} "
+            f"{Beach.CORAL}{res_data}{Style.RESET_ALL}"
+        )
         return
 
     _clear_captcha_headers(session)
     session.headers.update({"authorization": auth_token})
     log.info(
-        f"{Beach.INFO}generated token="
+        f"Generated token {Beach.FOAM}→{Style.RESET_ALL} "
         f"{Beach.PALM}{auth_token[:35]}...{Style.RESET_ALL}"
     )
 
@@ -730,7 +818,10 @@ def reg(
         _finalize(session, email, password, auth_token, onliner, logger)
         return
 
-    log.info(f"{Beach.INFO}status=verification pending{Style.RESET_ALL}")
+    log.info(
+        f"Status {Beach.FOAM}→{Style.RESET_ALL} "
+        f"{Beach.SAND}verification pending{Style.RESET_ALL}"
+    )
 
 
     # fetch + parse verify url
@@ -825,9 +916,8 @@ def reg(
                 email=email,
             )
         except Exception as e:
-            log.warning(
-                f"{Beach.WARNING}phone verification crashed: "
-                f"{type(e).__name__}: {e}{Style.RESET_ALL}"
+            log.error(
+                f"{Beach.ERROR}error={type(e).__name__}: {e}{Style.RESET_ALL}"
             )
 
     # customise: pfp / bio / status / hypesquad (each toggleable)
@@ -843,9 +933,8 @@ def reg(
             do_hypesquad=do_hypesquad,
         )
     except Exception as e:
-        log.warning(
-            f"{Beach.WARNING}apply_profile failed: "
-            f"{type(e).__name__}: {e}{Style.RESET_ALL}"
-        )
+        log.error(
+                f"{Beach.ERROR}error={type(e).__name__}: {e}{Style.RESET_ALL}"
+            )
 
     _finalize(session, email, password, auth_token, onliner, logger)

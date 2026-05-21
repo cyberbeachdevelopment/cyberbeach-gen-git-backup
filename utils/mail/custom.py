@@ -46,9 +46,7 @@ class ImapMailApi:
             local = ''.join(random.choices('abcdefghijklmnopqrstuvwxyz0123456789', k=10))
             return f"{local}@{self.forced_domain}"
 
-        log.warning(
-            f"{Beach.WARNING}no imap config available{Style.RESET_ALL}"
-        )
+        log.warning(f"IMAP {Beach.FOAM}→{Style.RESET_ALL} {Beach.SAND}no config available{Style.RESET_ALL}")
         return None
 
 
@@ -63,7 +61,8 @@ class ImapMailApi:
         seen = set()
 
         log.info(
-            f"{Beach.INFO}starting IMAP polling for {Beach.PALM}{email_address}{Style.RESET_ALL}"
+            f"IMAP polling started {Beach.FOAM}→{Style.RESET_ALL} "
+            f"{Beach.OCEAN}{email_address}{Style.RESET_ALL}"
         )
 
         while time.time() - start < timeout:
@@ -130,7 +129,8 @@ class ImapMailApi:
                             url = max(candidates, key=len)
 
                             log.debug(
-                                f"verification link found for email={email_address}"
+                                f"Verification link found {Beach.FOAM}→{Style.RESET_ALL} "
+                                f"{Beach.OCEAN}{email_address}{Style.RESET_ALL}"
                             )
 
                             conn.logout()
@@ -144,12 +144,13 @@ class ImapMailApi:
                 STATS["error"] += 1
 
                 log.error(
-                    f"{Beach.CORAL}IMAP polling error for email={email_address}{Style.RESET_ALL}"
+                    f"{Beach.ERROR}error={type(e).__name__}: {e}{Style.RESET_ALL}"
                 )
 
             time.sleep(poll_interval)
 
         log.warning(
-            f"{Beach.WARNING}timeout waiting for email={email_address}{Style.RESET_ALL}"
+            f"Timeout waiting for email {Beach.FOAM}→{Style.RESET_ALL} "
+            f"{Beach.OCEAN}{email_address}{Style.RESET_ALL}"
         )
         return None

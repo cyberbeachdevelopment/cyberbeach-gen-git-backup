@@ -1,7 +1,7 @@
 # cyberbeach.cc & discord.gg/cyberbeach
 
 
-import time, os, logging, sys, json
+import time, os, logging, sys
 
 
 from colorama import Fore, Style

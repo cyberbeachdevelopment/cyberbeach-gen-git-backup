@@ -15,7 +15,7 @@ log = setup_logger(__name__)
 class TempTfMailApi:
     BASE_URL = "https://api2.freecustom.email/v1"
     INBOXES_ENDPOINT = f"{BASE_URL}/inboxes"
-    DEFAULT_DOMAIN = "junkstopper.info"
+    DEFAULT_DOMAIN = "ditplay.info"
 
     # shared across all instances
     _cleanup_lock = threading.Lock()
@@ -63,15 +63,21 @@ class TempTfMailApi:
             created_email = self._create_temp_account(proxy=proxy)
 
         if not created_email:
-            log.warning(f"{Beach.WARNING}freecustom.email could not create an email{Style.RESET_ALL}")
+            log.warning(
+                f"Email creation failed {Beach.FOAM}→{Style.RESET_ALL} "
+                f"provider={Beach.OCEAN}freecustom.email{Style.RESET_ALL}"
+            )
             return None
 
         if not self._register_inbox(created_email, proxy=proxy):
-            log.warning(f"{Beach.WARNING}no inbox: email={created_email}{Style.RESET_ALL}")
+            log.warning(
+                f"No inbox found {Beach.FOAM}→{Style.RESET_ALL} "
+                f"{Beach.OCEAN}{created_email}{Style.RESET_ALL}"
+            )
             return None
 
         self.created_emails[created_email] = password or ""
-        log.debug(f"email={created_email}")
+
         return created_email
 
     def _create_temp_account(self, proxy: str = None):
@@ -85,13 +91,19 @@ class TempTfMailApi:
 
         acquired = TempTfMailApi._cleanup_lock.acquire(blocking=True, timeout=60)
         if not acquired:
-            log.warning(f"{Beach.WARNING}cleanup lock busy, skipping{Style.RESET_ALL}")
+            log.warning(
+                f"Cleanup skipped {Beach.FOAM}→{Style.RESET_ALL} "
+                f"{Beach.SAND}lock busy{Style.RESET_ALL}"
+            )
             return False
 
         try:
 
             if (time.time() - TempTfMailApi._last_cleanup_ts) < TempTfMailApi._CLEANUP_COOLDOWN:
-                log.debug("recent cleanup detected, skipping duplicate cleanup")
+                log.debug(
+                    f"Cleanup skipped {Beach.FOAM}→{Style.RESET_ALL} "
+                    f"{Beach.OCEAN}recent run detected{Style.RESET_ALL}"
+                )
                 return True
 
             proxies = self._build_proxies(proxy)
@@ -143,7 +155,10 @@ class TempTfMailApi:
 
                 if del_resp.ok:
                     deleted += 1
-                    log.debug(f"deleted inbox={email}")
+                    log.debug(
+                        f"Inbox deleted {Beach.FOAM}→{Style.RESET_ALL} "
+                        f"{Beach.OCEAN}{email}{Style.RESET_ALL}"
+                    )
                     continue
 
                 # 404 =
@@ -154,8 +169,9 @@ class TempTfMailApi:
                 # rate limit
                 if del_resp.status_code == 429:
                     log.warning(
-                        f"{Beach.WARNING}rate limited deleting "
-                        f"{email}, sleeping 5s{Style.RESET_ALL}"
+                        f"Rate limited {Beach.FOAM}→{Style.RESET_ALL} "
+                        f"{Beach.OCEAN}{email}{Style.RESET_ALL} "
+                        f"{Beach.SAND}sleeping 5s{Style.RESET_ALL}"
                     )
                     time.sleep(5)
 
@@ -167,18 +183,22 @@ class TempTfMailApi:
                     )
                     if retry_resp.ok or retry_resp.status_code == 404:
                         deleted += 1
-                        log.debug(f"deleted inbox after retry={email}")
+                        log.debug(
+                            f"Inbox deleted after retry {Beach.FOAM}→{Style.RESET_ALL} "
+                            f"{Beach.OCEAN}{email}{Style.RESET_ALL}"
+                        )
                     continue
 
                 log.warning(
-                    f"{Beach.WARNING}failed deleting "
-                    f"{email} status={del_resp.status_code}"
-                    f"{Style.RESET_ALL}"
+                    f"Failed deleting inbox {Beach.FOAM}→{Style.RESET_ALL} "
+                    f"{Beach.OCEAN}{email}{Style.RESET_ALL} "
+                    f"status={Beach.CORAL}{del_resp.status_code}{Style.RESET_ALL}"
                 )
 
-            log.warning(
-                f"{Beach.WARNING}cleanup done deleted={deleted} "
-                f"already_gone={already_gone}{Style.RESET_ALL}"
+            log.info(
+                f"Cleanup done {Beach.FOAM}→{Style.RESET_ALL} "
+                f"deleted={Beach.OCEAN}{deleted}{Style.RESET_ALL} "
+                f"already_gone={Beach.OCEAN}{already_gone}{Style.RESET_ALL}"
             )
 
             TempTfMailApi._last_cleanup_ts = time.time()
@@ -186,14 +206,19 @@ class TempTfMailApi:
 
         except Exception as e:
             STATS["error"] += 1
-            log.error(f"{Beach.ERROR}delete inboxes error={e}{Style.RESET_ALL}")
+            log.error(
+                f"{Beach.ERROR}error={type(e).__name__}: {e}{Style.RESET_ALL}"
+            )
             return False
         finally:
             TempTfMailApi._cleanup_lock.release()
 
     def _register_inbox(self, email: str, proxy: str = None) -> bool:
         if not self.api_key:
-            log.warning(f"{Beach.WARNING}api key missing: provider=freecustomemail{Style.RESET_ALL}")
+            log.warning(
+                f"API key missing {Beach.FOAM}→{Style.RESET_ALL} "
+                f"provider={Beach.OCEAN}freecustomemail{Style.RESET_ALL}"
+            )
             return False
 
         proxies = self._build_proxies(proxy)
@@ -209,7 +234,11 @@ class TempTfMailApi:
             )
 
             if resp.status_code in (200, 201):
-                log.debug(f"freecustom.email registered: email={email}")
+                log.debug(
+                    f"Email registered {Beach.FOAM}→{Style.RESET_ALL} "
+                    f"provider={Beach.OCEAN}freecustom.email{Style.RESET_ALL} "
+                    f"email={Beach.OCEAN}{email}{Style.RESET_ALL}"
+                )
                 return True
 
             error_text = ""
@@ -227,10 +256,16 @@ class TempTfMailApi:
                     needs_cleanup = (time.time() - TempTfMailApi._last_cleanup_ts) >= TempTfMailApi._CLEANUP_COOLDOWN
 
                 if needs_cleanup:
-                    log.warning(f"{Beach.WARNING}inbox limit reached -> deleting all inboxes{Style.RESET_ALL}")
+                    log.warning(
+                        f"Inbox limit reached {Beach.FOAM}→{Style.RESET_ALL} "
+                        f"{Beach.SAND}deleting all inboxes{Style.RESET_ALL}"
+                    )
                     self._delete_all_inboxes(proxy=proxy)
                 else:
-                    log.debug("inbox limit hit but cleanup just ran, waiting briefly")
+                    log.debug(
+                        f"Inbox limit hit {Beach.FOAM}→{Style.RESET_ALL} "
+                        f"{Beach.SAND}cleanup just ran, waiting briefly{Style.RESET_ALL}"
+                    )
                     time.sleep(2.0)
 
                 # retry once after cleanup
@@ -242,10 +277,17 @@ class TempTfMailApi:
                     proxies=proxies,
                 )
                 if retry_resp.status_code in (200, 201):
-                    log.debug(f"registered after cleanup: email={email}")
+                    log.debug(
+                        f"Email registered after cleanup {Beach.FOAM}→{Style.RESET_ALL} "
+                        f"email={Beach.OCEAN}{email}{Style.RESET_ALL}"
+                    )
                     return True
 
-            log.warning(f"{Beach.WARNING}freecustom.email failed: email={email}{Style.RESET_ALL}")
+            log.warning(
+                f"Email registration failed {Beach.FOAM}→{Style.RESET_ALL} "
+                f"provider={Beach.OCEAN}freecustom.email{Style.RESET_ALL} "
+                f"email={Beach.CORAL}{email}{Style.RESET_ALL}"
+            )
             return False
 
         except Exception as e:
@@ -297,14 +339,23 @@ class TempTfMailApi:
                                         or "click.discord.com" in second_url
                                     ):
                                         url = second_url
-                                        log.debug("using discord secondary URL")
+                                        log.debug(
+                                            f"Discord endpoint {Beach.FOAM}→{Style.RESET_ALL} "
+                                            f"{Beach.OCEAN}using secondary URL{Style.RESET_ALL}"
+                                        )
 
                                 if not url:
                                     url = max(target_links, key=len)
-                                    log.debug("using discord URL")
+                                    log.debug(
+                                        f"Discord endpoint {Beach.FOAM}→{Style.RESET_ALL} "
+                                        f"{Beach.OCEAN}using primary URL{Style.RESET_ALL}"
+                                    )
 
                                 if "click.discord.com" in url:
-                                    log.debug(f"url={url[:30]}...")
+                                    log.debug(
+                                        f"Request URL {Beach.FOAM}→{Style.RESET_ALL} "
+                                        f"{Beach.OCEAN}{url[:30]}...{Style.RESET_ALL}"
+                                    )
                                     resolved = self._resolve_url(url, proxy=proxy)
                                     if resolved:
                                         return resolved
@@ -315,7 +366,10 @@ class TempTfMailApi:
                 log.error(f"{Beach.ERROR}error={type(e).__name__}: {e}{Style.RESET_ALL}")
             time.sleep(poll_interval)
 
-        log.warning(f"{Beach.WARNING}timeout: email={email}{Style.RESET_ALL}")
+        log.warning(
+            f"Request timeout {Beach.FOAM}→{Style.RESET_ALL} "
+            f"email={Beach.CORAL}{email}{Style.RESET_ALL}"
+        )
         return None
 
     def _read_message_detail(self, email: str, message_id: str, proxy: str = None):
@@ -351,7 +405,10 @@ class TempTfMailApi:
             resp = requests.head(url, allow_redirects=True, timeout=10, proxies=proxies)
             final_url = resp.url
             if "discord.com/verify" in final_url:
-                log.debug(f"url={final_url[:40]}...")
+                log.debug(
+                    f"Request URL {Beach.FOAM}→{Style.RESET_ALL} "
+                    f"{Beach.OCEAN}{final_url[:40]}...{Style.RESET_ALL}"
+                )
                 return final_url
         except Exception:
             pass

@@ -14,7 +14,10 @@ class AnySolverClient:
             "websiteKey": "a9b5fb07-92ff-493f-86fe-352a2803b3df",
         }
 
-        log.debug(f"client initialized base_url={self.base_url}")
+        log.debug(
+            f"Client initialized {Beach.FOAM}→{Style.RESET_ALL} "
+            f"base_url={Beach.OCEAN}{self.base_url}{Style.RESET_ALL}"
+        )
 
     def _build_task(self, proxy=None, userAgent=None, rqdata=None, sessionId=None, sitekey=None):
         task = self.base_task.copy()
@@ -33,10 +36,11 @@ class AnySolverClient:
         # print(task)
 
         log.debug(
-            f"task built sitekey={task.get('websiteKey')} "
-            f"proxy={'yes' if proxy else 'no'} "
-            f"ua={'yes' if userAgent else 'no'} "
-            f"rqdata={'yes' if rqdata else 'no'}"
+            f"Task built {Beach.FOAM}→{Style.RESET_ALL} "
+            f"sitekey={Beach.OCEAN}{task.get('websiteKey')}{Style.RESET_ALL} "
+            f"proxy={Beach.OCEAN}{'yes' if proxy else 'no'}{Style.RESET_ALL} "
+            f"ua={Beach.OCEAN}{'yes' if userAgent else 'no'}{Style.RESET_ALL} "
+            f"rqdata={Beach.OCEAN}{'yes' if rqdata else 'no'}{Style.RESET_ALL}"
         )
 
         return task
@@ -50,7 +54,7 @@ class AnySolverClient:
         task = self._build_task(proxy, user_agent, rqdata)#, sessionId, sitekey)
 
         try:
-            log.debug("creating task...")
+
             create = requests.post(
                 f"{self.base_url}/createTask",
                 json={"clientKey": self.api_key, "task": task},
@@ -58,20 +62,26 @@ class AnySolverClient:
             ).json()
 
             if create.get("errorId") != 0:
-                log.error(
-                    f"create failed error={create.get('errorCode')} "
-                    f"desc={create.get('errorDescription')}"
+                log.warning(
+                    f"Create failed {Beach.FOAM}→{Style.RESET_ALL} "
+                    f"error={Beach.CORAL}{create.get('errorCode')}{Style.RESET_ALL} "
+                    f"desc={Beach.CORAL}{create.get('errorDescription')}{Style.RESET_ALL}"
                 )
                 raise Exception(
                     f"{create.get('errorCode')}: {create.get('errorDescription', 'Unknown error')}"
                 )
 
             task_id = create["taskId"]
-            log.debug(f"task created id={task_id}")
+            log.debug(
+                f"Task created {Beach.FOAM}→{Style.RESET_ALL} "
+                f"id={Beach.OCEAN}{task_id}{Style.RESET_ALL}"
+            )
 
         except Exception as e:
             STATS["error"] += 1
-            log.error(f"create exception error={e}")
+            log.error(
+                f"{Beach.ERROR}error={type(e).__name__}: {e}{Style.RESET_ALL}"
+            )
             raise
 
         while True:
@@ -88,24 +98,41 @@ class AnySolverClient:
 
                 status = result.get("status")
 
-                log.debug(f"id={task_id} status={status}")
+                log.debug(
+                    f"Task status {Beach.FOAM}→{Style.RESET_ALL} "
+                    f"id={Beach.OCEAN}{task_id}{Style.RESET_ALL} "
+                    f"status={Beach.OCEAN}{status}{Style.RESET_ALL}"
+                )
 
                 if status == "ready":
-                    log.debug(f"task solved id={task_id}")
+                    log.debug(
+                        f"Task solved {Beach.FOAM}→{Style.RESET_ALL} "
+                        f"id={Beach.OCEAN}{task_id}{Style.RESET_ALL}"
+                    )
                     return result["solution"]["token"]
 
                 if status == "failed":
-                    log.error(
-                        f"id={task_id} failed error={result.get('errorCode')} "
-                        f"desc={result.get('errorDescription')}"
+                    log.warning(
+                        f"Task failed {Beach.FOAM}→{Style.RESET_ALL} "
+                        f"id={Beach.OCEAN}{task_id}{Style.RESET_ALL} "
+                        f"error={Beach.CORAL}{result.get('errorCode')}{Style.RESET_ALL} "
+                        f"desc={Beach.CORAL}{result.get('errorDescription')}{Style.RESET_ALL}"
                     )
                     return None
 
                 if status != "processing":
-                    log.warning(f"id={task_id} unexpected_status={status}")
+                    log.warning(
+                        f"Unexpected status {Beach.FOAM}→{Style.RESET_ALL} "
+                        f"id={Beach.OCEAN}{task_id}{Style.RESET_ALL} "
+                        f"status={Beach.SAND}{status}{Style.RESET_ALL}"
+                    )
                     return None
 
             except Exception as e:
                 STATS["error"] += 1
-                log.warning(f"id={task_id} poll_error={e}")
+                log.warning(
+                    f"Poll error {Beach.FOAM}→{Style.RESET_ALL} "
+                    f"id={Beach.OCEAN}{task_id}{Style.RESET_ALL} "
+                    f"error={Beach.SAND}{e}{Style.RESET_ALL}"
+                )
                 return None

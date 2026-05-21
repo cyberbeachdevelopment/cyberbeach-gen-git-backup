@@ -15,14 +15,14 @@ Need a custom tool built? Reach out and get a fair quote, no bs.
 
 ## features
 
-- async architecture for better performance
-- multi-threaded execution
-- support for 10+ captcha solvers
-- dynamic header generation
-- live console title updates
-- optional account customization
-- optional email verification support
-- optional phone verification support
+- Async architecture for better performance
+- Multi-threaded execution
+- Support for 10+ captcha solvers
+- Dynamic header generation
+- Live console title updates
+- Optional account customization
+- Optional email verification support
+- Optional phone verification support
 
 ---
 
@@ -30,7 +30,7 @@ Need a custom tool built? Reach out and get a fair quote, no bs.
 
 ## 1. configure anysolver (required)
 
-AnySolver is the CAPTCHA-solving backend used by this tool.
+[AD] AnySolver is the CAPTCHA-solving backend used by this tool.
 When Cyberbeach returns anti-bot challenges, this project sends solving tasks to AnySolver and uses the returned tokens/cookies to continue its tasks.
 
 ![AnySolver](imgs/anysolver_cover.png)
@@ -94,15 +94,26 @@ Example:
 
   "phone": {
     "enabled": false,
+    "provider": "herosms_or_vaksms",
 
-    "provider": "fivesim",
-    "fivesim": {
-        "token": "your_fivesin_api_key",
-        "country": "england",
-        "operator": "any",
-        "sms_timeout": 180,
-        "poll_interval": 3
-    }},
+    "vaksms": {
+      "api_key": "",
+      "service": "ds",
+      "country": "uk",
+      "operator": null,
+      "sms_timeout": 180,
+      "poll_interval": 3
+    },
+
+    "herosms": {
+      "api_key": "",
+      "service": "ds",
+      "country": 16,
+      "operator": null,
+      "sms_timeout": 180,
+      "poll_interval": 3
+    }
+  }, 
 
   "verification": {
     "enabled": true
@@ -165,8 +176,8 @@ PS: Make sure they are **Sticky** proxies & **Residential** for the best results
 | Rank | Provider | Status |
 |---|---|---|
 | 1 | DataImpulse.com | Recommended |
-| 2 | NullProxies.com | Stable |
-| 3 | VaultProxies.net | Budget Option |
+| 2 | EasyProxy.shop | Stable |
+| 3 | NullProxies.com | Budget Option |
 
 ---
 

@@ -1,6 +1,6 @@
 # Cyberbeach Discord Account Creator
 
-v1.03
+v1.04
 
 Need a custom tool built? Reach out and get a fair quote, no bs.
 

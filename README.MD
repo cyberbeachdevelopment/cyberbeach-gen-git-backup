@@ -1,8 +1,8 @@
 # Cyberbeach Discord Account Creator
 
-v1.04
+v1.05
 
-Need a custom tool built? Reach out and get a fair quote, no bs.
+[AD] Need a custom tool built? Reach out and get a fair quote, no bs.
 
 [AD] Need a custom **IMAP Mail Host** for as low as **10 USD** for a **30%** increase in **Unlock Rate**?
 
@@ -46,7 +46,7 @@ When Cyberbeach returns anti-bot challenges, this project sends solving tasks to
 |---|---|---|
 | 1 | CapLess | Recommended |
 | 2 | RezoSolver | Stable |
-| 3 | VoidSolver | Budget Option |
+| 3 | BruxSolver | Budget Option |
 
 ---
 
@@ -176,7 +176,7 @@ PS: Make sure they are **Sticky** proxies & **Residential** for the best results
 | Rank | Provider | Status |
 |---|---|---|
 | 1 | DataImpulse.com | Recommended |
-| 2 | EasyProxy.shop | Stable |
+| 2 | SeamlessProxies.com | Stable |
 | 3 | NullProxies.com | Budget Option |
 
 ---

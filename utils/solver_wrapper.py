@@ -18,7 +18,7 @@ class SolverWrapper:
     
 
     PROVIDERS = {
-        "anysolver": AnySolverClient,
+        "anysolver": AnySolverClient
     }
 
     def __init__(

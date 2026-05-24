@@ -4,7 +4,7 @@ import base64, json, platform, uuid, re, requests
 
 from stealth_requests import StealthSession
 
-from utils.core import setup_logger, STATS, Beach, Style
+from utils.core import setup_logger, Beach, Style
 log = setup_logger(__name__)
 
 

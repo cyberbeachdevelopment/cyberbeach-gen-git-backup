@@ -1,6 +1,6 @@
 # cyberbeach.cc & discord.gg/cyberbeach
 
-import asyncio, sys, random, time, threading, os, string
+import asyncio, sys, random, time, threading, os, string, requests, json
 
 from pathlib import Path
 from colorama import Style
@@ -15,9 +15,16 @@ from utils.core import (
     show_banner,
     system,
 )
-from utils.proxy import proxy_manager
+from utils.proxy import ProxyManager
+from utils.version import __version__
 
 log = setup_logger(__name__)
+
+
+# dont touch faggot this took time, for auto update.
+GITHUB_REPO_OWNER = "cyberbeachdevelopment"
+GITHUB_REPO_NAME = "cyberbeach-gen-git-backup"
+CURRENT_VERSION = __version__
 
 
 def title_loop():
@@ -45,20 +52,32 @@ show_banner()
 
 
 SOLVERS = {
-    "anysolver":  {"name": "anysolver", "key": "anysolver_api_key"},
+    "anysolver":  {"name": "anysolver", "key": "anysolver_api_key"}
 }
 
 PHONE_PROVIDERS = {
     "vaksms": {
-        "name": "vak-sms",
-
+        "name": "vaksms",
         "required_fields": [("api_key", "token")],
     },
     "herosms": {
-        "name": "hero-sms",
+        "name": "herosms",
         "required_fields": [("api_key", "token")],
     },
 }
+
+
+def ad_loop():
+    while True:
+
+        # log.ad("cyberbeach.cc | discord.gg/cyberbeach")
+
+        log.ad(
+            f"Discord Invite {Beach.FOAM}→{Style.RESET_ALL} "
+            f"{Beach.SUNSET}discord.gg/cyberbeach{Style.RESET_ALL}"
+        )
+
+        time.sleep(10) # 6 times in 1 min
 
 
 def check_structure():
@@ -310,8 +329,75 @@ def select_phone_provider():
     return chosen, resolved
 
 
+def get_latest_github_version():
+    url = f"https://api.github.com/repos/{GITHUB_REPO_OWNER}/{GITHUB_REPO_NAME}/releases/latest"
+    try:
+        response = requests.get(url, timeout=5)
+        response.raise_for_status()
+        release_info = json.loads(response.text)
+        latest_tag = release_info.get("tag_name")
+        if latest_tag:
+            return latest_tag.lstrip('v')
+        return None
+    except requests.exceptions.RequestException as e:
+        log.error(f"{Beach.ERROR}Failed to fetch latest GitHub version: {e}{Style.RESET_ALL}")
+        return None
+    except json.JSONDecodeError:
+        log.error(f"{Beach.ERROR}Failed to parse GitHub API response.{Style.RESET_ALL}")
+        return None
+
+def is_update_available(current_version: str, latest_version: str) -> bool:
+    if not latest_version:
+        return False
+
+    def parse_version(version_str: str):
+        return [int(part) for part in version_str.split('.')]
+
+    try:
+        current_parts = parse_version(current_version)
+        latest_parts = parse_version(latest_version)
+
+        # zeros to match length
+        max_len = max(len(current_parts), len(latest_parts))
+        current_parts += [0] * (max_len - len(current_parts))
+        latest_parts += [0] * (max_len - len(latest_parts))
+
+        return latest_parts > current_parts
+    except ValueError:
+        log.warning(f"{Beach.WARNING}Invalid version format detected. Cannot compare versions.{Style.RESET_ALL}")
+        return False
+
+def check_for_updates():
+    log.info(f"Checking for updates... (Current version: {Beach.OCEAN}{CURRENT_VERSION}{Style.RESET_ALL})")
+    latest_github_version = get_latest_github_version()
+
+    if latest_github_version:
+        if is_update_available(CURRENT_VERSION, latest_github_version):
+            log.info(
+                f"{Beach.WARNING}Update available! {Beach.FOAM}→{Style.RESET_ALL} "
+                f"New version: {Beach.OCEAN}{latest_github_version}{Style.RESET_ALL}\n"
+                f"{Beach.INFO}Please download the latest version from "
+                f"{Beach.SUNSET}https://github.com/{GITHUB_REPO_OWNER}/{GITHUB_REPO_NAME}/releases{Style.RESET_ALL}\n"
+                f"{Beach.INFO}Press {Beach.SUNSET}ENTER{Style.RESET_ALL} to continue with current version, or {Beach.SUNSET}CTRL+C{Style.RESET_ALL} to exit."
+            )
+            try:
+                input()
+            except KeyboardInterrupt:
+                log.info(f"{Beach.INFO}Exiting for update.{Style.RESET_ALL}")
+                sys.exit(0)
+        else:
+            log.info(f"{Beach.INFO}You are running the latest version!{Style.RESET_ALL}")
+    else:
+        log.warning(f"{Beach.WARNING}Could not check for updates. Please ensure GitHub repo details are correct and you have an internet connection.{Style.RESET_ALL}")
+    print("\n")
+
+
 async def main():
     global SOLVER_TYPE, SOLVER_API_KEY, PHONE_PROVIDER, PHONE_CFG, gen_count
+
+    proxy_manager = ProxyManager()
+
+    check_for_updates()
 
     SOLVER_TYPE, SOLVER_API_KEY = select_solver()
     PHONE_PROVIDER, PHONE_CFG   = select_phone_provider()
@@ -322,10 +408,11 @@ async def main():
     semaphore = asyncio.Semaphore(NUM_THREADS)
 
     threading.Thread(target=title_loop, daemon=True).start()
+    threading.Thread(target=ad_loop, daemon=True).start()
 
     async def schedule_worker(current_num: int):
         try:
-            proxy = await asyncio.to_thread(proxy_manager.pop_top)
+            proxy = await asyncio.to_thread(proxy_manager.get_proxy)
             email = await asyncio.to_thread(mail_api.create_account)
             if not email:
                 log.warning(

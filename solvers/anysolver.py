@@ -1,6 +1,7 @@
-# anysolver.io
+# anysolver.com
 
-import requests, time
+import requests
+import time
 from utils.core import *
 log = setup_logger(__name__)
 

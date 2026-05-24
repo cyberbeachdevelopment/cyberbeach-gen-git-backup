@@ -89,13 +89,6 @@ class PhoneWrapper:
         )
         order = self._normalize_order(order)
 
-        log.debug(
-            f"Bought number {Beach.FOAM}→{Style.RESET_ALL} "
-            f"provider={Beach.OCEAN}{self.provider}{Style.RESET_ALL} "
-            f"id={Beach.OCEAN}{order['id']}{Style.RESET_ALL} "
-            f"phone={Beach.OCEAN}{order['phone']}{Style.RESET_ALL}"
-        )
-
         return order
 
     def wait_for_code(

@@ -13,6 +13,19 @@ config = load_config()
 START_TIME = time.time()
 
 
+# ! CUSTOM LEVELS
+AD_LEVEL = 25
+logging.addLevelName(AD_LEVEL, "AD")
+
+
+def ad(self, message, *args, **kwargs):
+    if self.isEnabledFor(AD_LEVEL):
+        self._log(AD_LEVEL, message, args, **kwargs)
+
+
+logging.Logger.ad = ad
+
+
 # ! STATS
 STATS = {
     "unlocked": 0,
@@ -86,6 +99,7 @@ class CyberBeachFormatter(logging.Formatter):
     LEVEL_STYLES = {
         "DEBUG": Beach.DEEP + "🌊 DEBUG",
         "INFO": Beach.FOAM + "🏝️ INFO ",
+        "AD": Beach.SUNSET + Style.BRIGHT + "📢 AD   ",
         "WARNING": Beach.SAND + "🫧 WARN ",
         "ERROR": Beach.CORAL + "🔥 ERROR",
         "CRITICAL": Beach.CORAL + Style.BRIGHT + "💀 CRIT ",

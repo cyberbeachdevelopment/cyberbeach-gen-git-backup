@@ -332,10 +332,10 @@ def _solve_captcha(solver_type, solver_api_key, rqdata, proxy, email):
         return None, "solver_exception"
 
     if not cap_token:
-        log.warning(
-            f"No captcha available {Beach.FOAM}→{Style.RESET_ALL} "
-            f"captcha_token={Beach.SAND}{cap_token}{Style.RESET_ALL}"
-        )
+        # log.warning(
+        #     f"No captcha available {Beach.FOAM}→{Style.RESET_ALL} "
+        #     f"captcha_token={Beach.SAND}{cap_token}{Style.RESET_ALL}"
+        # )
         return None, None
 
     log.info(
@@ -392,7 +392,7 @@ def _do_phone_verification(session, proxy, phone_cfg, solver_type, solver_api_ke
         )
         return False
 
-    # per-provider sensible country default
+    # idk its weird
     default_country = 0 if provider == "herosms" else "ru"
 
     try:
@@ -411,7 +411,6 @@ def _do_phone_verification(session, proxy, phone_cfg, solver_type, solver_api_ke
             )
         return False
 
-    # provider-specific "no numbers" errors — caught as a tuple so the rest of the flow stays generic
     no_numbers_excs = _no_numbers_excs_for(provider)
     base_excs       = _base_excs_for(provider)
 
@@ -436,8 +435,8 @@ def _do_phone_verification(session, proxy, phone_cfg, solver_type, solver_api_ke
         )
         return False
 
-    # discord wants E.164 with leading '+'; vak-sms/hero-sms return digits only
-    phone_e164 = phone if str(phone).startswith("+") else f"+{phone}"
+    # discord wants E.164 with leading '+' but vak-sms/hero-sms return digits only
+    phone_e164 = phone # if str(phone).startswith("+") else f"+{phone}"
 
     log.info(
         f"Phone bought {Beach.FOAM}→{Style.RESET_ALL} "

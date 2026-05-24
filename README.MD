@@ -80,6 +80,10 @@ Example:
       "api_key": "your_freecustomemail_api_key"
     },
 
+    "cybertemp": {
+      "api_key": "your_cybertemp_api_key"
+    },
+
     "imap": {
       "enabled": false,
       "host": "",
@@ -131,13 +135,28 @@ Example:
 }
 ```
 
+### switching the mail provider
+
+JSON doesn't support comments, so the provider is picked by the `mail.provider` value:
+
+| Value | Uses |
+|---|---|
+| `freecustomemail` | freecustom.email API (default) |
+| `cybertemp` | [cybertemp.xyz](https://cybertemp.xyz) — set `mail.cybertemp.api_key` |
+| `imap` | Your own IMAP mailbox (fill in `mail.imap.*`) |
+
+To use cybertemp: set `"provider": "cybertemp"` and paste your key into `mail.cybertemp.api_key`. Domains are pulled live from the API (`type=discord`), so no domain field is needed.
+
+---
+
 Below is a quick explanation of the most important settings inside `input/config.json`.
 
 | Section | Description |
 |---|---|
 | `data.anysolver_api_key` | Your AnySolver API key used for CAPTCHA solving |
-| `mail.provider` | Mail system to use (`freecustom.email` or `imap`) |
+| `mail.provider` | Mail system to use (`freecustomemail`, `cybertemp`, or `imap`) |
 | `mail.freecustomemail.api_key` | API key for FreeCustomEmail |
+| `mail.cybertemp.api_key` | API key for [cybertemp.xyz](https://cybertemp.xyz/pricing) (domains auto-fetched via `type=discord`) |
 | `mail.imap.*` | Your own custom mailbox settings |
 | `phone.enabled` | Enable phone verification |
 | `phone.provider` | SMS provider to use |

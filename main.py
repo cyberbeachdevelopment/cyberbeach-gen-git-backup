@@ -101,6 +101,10 @@ def check_structure():
       "api_key": "your_freecustomemail_api_key"
     },
 
+    "cybertemp": {
+      "api_key": "your_cybertemp_api_key"
+    },
+
     "imap": {
       "enabled": false,
       "host": "",

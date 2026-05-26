@@ -4,10 +4,14 @@
   },
 
   "mail": {
-    "provider": "freecustomemail",
+    "provider": "cybertemp",
 
     "freecustomemail": {
       "api_key": "your_freecustomemail_api_key"
+    },
+
+    "cybertemp": {
+      "api_key": "your_cybertemp_api_key"
     },
 
     "imap": {
@@ -43,7 +47,7 @@
       "sms_timeout": 180,
       "poll_interval": 3
     }
-  },  
+  },
 
   "verification": {
     "enabled": true

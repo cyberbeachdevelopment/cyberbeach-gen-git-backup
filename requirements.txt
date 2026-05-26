@@ -3,6 +3,7 @@ cffi==2.0.0
 charset-normalizer==3.4.7
 colorama==0.4.6
 curl_cffi==0.15.0
+cybertemp==0.1.0
 gevent==26.4.0
 greenlet==3.5.1
 idna==3.15

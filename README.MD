@@ -2,7 +2,7 @@
 
 ![Version](https://img.shields.io/badge/Version-v1.06-green)
 
-![Advertisement](https://img.shields.io/badge/ADVERTISEMENT-Custom%20Tools%20Available-orange) Need a custom tool built? Reach out and get a fair quote, no bs.
+![Advertisement](https://img.shields.io/badge/ADVERTISEMENT-CYBERBEACH-yellow) Need a custom tool built? Reach out and get a fair quote, no bs.
 
 - [![Website](https://img.shields.io/badge/Website-cyberbeach.cc-blue)](https://cyberbeach.cc)
 - [![Discord](https://img.shields.io/badge/Discord-Join%20Server-5865F2?logo=discord&logoColor=white)](https://discord.gg/cyberbeach)
@@ -28,7 +28,7 @@
 
 ## 1. configure anysolver (required)
 
-![Advertisement](https://img.shields.io/badge/ADVERTISEMENT-Custom%20Tools%20Available-orange) AnySolver is the CAPTCHA-solving backend used by this tool.
+![Advertisement](https://img.shields.io/badge/ADVERTISEMENT-ANYSOLVER-orange) AnySolver is the CAPTCHA-solving backend used by this tool.
 When Cyberbeach returns anti-bot challenges, this project sends solving tasks to AnySolver and uses the returned tokens/cookies to continue its tasks.
 
 ![AnySolver](imgs/anysolver_cover.png)

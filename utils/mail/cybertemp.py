@@ -4,7 +4,6 @@ import time
 import random
 import string
 import re
-import json
 
 from utils.core import setup_logger, STATS, Beach, Style
 

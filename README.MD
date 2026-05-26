@@ -1,13 +1,11 @@
 # Cyberbeach Discord Account Creator
 
-v1.05
+![Version](https://img.shields.io/badge/Version-v1.06-green)
 
-[AD] Need a custom tool built? Reach out and get a fair quote, no bs.
+![Advertisement](https://img.shields.io/badge/ADVERTISEMENT-Custom%20Tools%20Available-orange) Need a custom tool built? Reach out and get a fair quote, no bs.
 
-[AD] Need a custom **IMAP Mail Host** for as low as **10 USD** for a **30%** increase in **Unlock Rate**?
-
-- [cyberbeach.cc](https://cyberbeach.cc)
-- [discord.gg/cyberbeach](https://discord.gg/cyberbeach)
+- [![Website](https://img.shields.io/badge/Website-cyberbeach.cc-blue)](https://cyberbeach.cc)
+- [![Discord](https://img.shields.io/badge/Discord-Join%20Server-5865F2?logo=discord&logoColor=white)](https://discord.gg/cyberbeach)
 
 ![CyberBeach-Gen](imgs/preview.png)
 
@@ -30,7 +28,7 @@ v1.05
 
 ## 1. configure anysolver (required)
 
-[AD] AnySolver is the CAPTCHA-solving backend used by this tool.
+![Advertisement](https://img.shields.io/badge/ADVERTISEMENT-Custom%20Tools%20Available-orange) AnySolver is the CAPTCHA-solving backend used by this tool.
 When Cyberbeach returns anti-bot challenges, this project sends solving tasks to AnySolver and uses the returned tokens/cookies to continue its tasks.
 
 ![AnySolver](imgs/anysolver_cover.png)
@@ -74,26 +72,12 @@ Example:
   },
 
   "mail": {
-    "provider": "freecustomemail",
-
-    "freecustomemail": {
-      "api_key": "your_freecustomemail_api_key"
-    },
+    "provider": "cybertemp",
 
     "cybertemp": {
       "api_key": "your_cybertemp_api_key"
-    },
-
-    "imap": {
-      "enabled": false,
-      "host": "",
-      "port": 993,
-      "username": "",
-      "password": "",
-      "use_ssl": true,
-      "mailbox": "INBOX",
-      "domain": ""
     }
+
   },
 
   "phone": {
@@ -135,29 +119,13 @@ Example:
 }
 ```
 
-### switching the mail provider
-
-JSON doesn't support comments, so the provider is picked by the `mail.provider` value:
-
-| Value | Uses |
-|---|---|
-| `freecustomemail` | freecustom.email API (default) |
-| `cybertemp` | [cybertemp.xyz](https://cybertemp.xyz) — set `mail.cybertemp.api_key` |
-| `imap` | Your own IMAP mailbox (fill in `mail.imap.*`) |
-
-To use cybertemp: set `"provider": "cybertemp"` and paste your key into `mail.cybertemp.api_key`. Domains are pulled live from the API (`type=discord`), so no domain field is needed.
-
----
-
 Below is a quick explanation of the most important settings inside `input/config.json`.
 
 | Section | Description |
 |---|---|
 | `data.anysolver_api_key` | Your AnySolver API key used for CAPTCHA solving |
-| `mail.provider` | Mail system to use (`freecustomemail`, `cybertemp`, or `imap`) |
-| `mail.freecustomemail.api_key` | API key for FreeCustomEmail |
+| `mail.provider` | Mail system to use (`cybertemp`) |
 | `mail.cybertemp.api_key` | API key for [cybertemp.xyz](https://cybertemp.xyz/pricing) (domains auto-fetched via `type=discord`) |
-| `mail.imap.*` | Your own custom mailbox settings |
 | `phone.enabled` | Enable phone verification |
 | `phone.provider` | SMS provider to use |
 | `verification.enabled` | Enables email verification |

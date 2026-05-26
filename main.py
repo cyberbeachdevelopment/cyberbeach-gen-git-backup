@@ -1,6 +1,6 @@
 # cyberbeach.cc & discord.gg/cyberbeach
 
-import asyncio, sys, random, time, threading, os, string, requests, json
+import asyncio, sys, random, time, threading, os, string, requests, json, signal, os
 
 from pathlib import Path
 from colorama import Style
@@ -95,25 +95,10 @@ def check_structure():
   },
 
   "mail": {
-    "provider": "freecustomemail",
-
-    "freecustomemail": {
-      "api_key": "your_freecustomemail_api_key"
-    },
+    "provider": "cybertemp",
 
     "cybertemp": {
       "api_key": "your_cybertemp_api_key"
-    },
-
-    "imap": {
-      "enabled": false,
-      "host": "",
-      "port": 993,
-      "username": "",
-      "password": "",
-      "use_ssl": true,
-      "mailbox": "INBOX",
-      "domain": ""
     }
   },
 
@@ -399,12 +384,19 @@ def check_for_updates():
 async def main():
     global SOLVER_TYPE, SOLVER_API_KEY, PHONE_PROVIDER, PHONE_CFG, gen_count
 
+    def force_exit(sig, frame):
+        log.warning("Ctrl+C detected, force exiting...")
+        os._exit(0)
+
+    signal.signal(signal.SIGINT, force_exit)
+    signal.signal(signal.SIGTERM, force_exit)
+
     proxy_manager = ProxyManager()
 
     check_for_updates()
 
     SOLVER_TYPE, SOLVER_API_KEY = select_solver()
-    PHONE_PROVIDER, PHONE_CFG   = select_phone_provider()
+    PHONE_PROVIDER, PHONE_CFG = select_phone_provider()
 
     customise_cfg = config.get("customise", {}) or {}
 
@@ -414,15 +406,14 @@ async def main():
     threading.Thread(target=title_loop, daemon=True).start()
     threading.Thread(target=ad_loop, daemon=True).start()
 
+    workers = set()
+
     async def schedule_worker(current_num: int):
         try:
             proxy = await asyncio.to_thread(proxy_manager.get_proxy)
             email = await asyncio.to_thread(mail_api.create_account)
+
             if not email:
-                log.warning(
-                    f"Failed to create email {Beach.FOAM}→{Style.RESET_ALL} "
-                    f"provider={Beach.OCEAN}{provider}{Style.RESET_ALL}"
-                )
                 return
 
             username, bio, status, pfp, password = load_profile()
@@ -434,14 +425,19 @@ async def main():
                 verification_enabled, SOLVER_TYPE, SOLVER_API_KEY,
                 customise_cfg, PHONE_CFG,
             )
+
         finally:
             semaphore.release()
 
     while True:
         await semaphore.acquire()
+
         gen_count += 1
         current_num = gen_count
-        asyncio.create_task(schedule_worker(current_num))
+
+        task = asyncio.create_task(schedule_worker(current_num))
+        workers.add(task)
+        task.add_done_callback(workers.discard)
 
 
 if __name__ == "__main__":

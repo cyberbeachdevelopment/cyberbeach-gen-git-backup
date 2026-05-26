@@ -436,7 +436,11 @@ def _do_phone_verification(session, proxy, phone_cfg, solver_type, solver_api_ke
         return False
 
     # discord wants E.164 with leading '+' but vak-sms/hero-sms return digits only
-    phone_e164 = phone # if str(phone).startswith("+") else f"+{phone}"
+    phone_e164 = "+" + "".join(c for c in str(phone) if c.isdigit())
+
+    if len(phone_e164) < 8:
+        log.warning("Suspicious phone length")
+        return False
 
     log.info(
         f"Phone bought {Beach.FOAM}→{Style.RESET_ALL} "
@@ -468,12 +472,15 @@ def _do_phone_verification(session, proxy, phone_cfg, solver_type, solver_api_ke
                 )
                 return False
 
+
             _apply_captcha_headers(
                 session,
                 cap_token,
                 attach_json.get("captcha_rqtoken"),
                 attach_json.get("captcha_session_id"),
             )
+
+
             attach_res, attach_json = _post_json(
                 session, f"{API}/users/@me/phone", {"phone": phone_e164},
             )
@@ -489,12 +496,15 @@ def _do_phone_verification(session, proxy, phone_cfg, solver_type, solver_api_ke
             return False
 
         verification_token = attach_json.get("verification_token")
+
         if not verification_token:
             log.warning(
                 f"Phone no verification_token in response {Beach.FOAM}→{Style.RESET_ALL} "
                 f"response={Beach.SAND}{attach_json}{Style.RESET_ALL}"
             )
             return False
+
+        verification_token = None
 
         # wait for SMS
         try:
@@ -572,7 +582,8 @@ def _do_phone_verification(session, proxy, phone_cfg, solver_type, solver_api_ke
 
     finally:
         if not success:
-            _refund_or_cancel(client, order_id)
+            # _refund_or_cancel(client, order_id)
+            threading.Thread(target=_refund_or_cancel, args=(client, order_id), daemon=True).start()
 
 
 def _no_numbers_excs_for(provider: str) -> tuple:
@@ -606,6 +617,8 @@ def _base_excs_for(provider: str) -> tuple:
 
 
 def _refund_or_cancel(client: "PhoneWrapper", order_id):
+    time.sleep(121) # secs, globally to prevent cancellation failure
+
     sms_already_received = False
     try:
         # both wrappers
@@ -778,7 +791,7 @@ def reg(
         res_json.get("captcha_session_id"),
     )
 
-    response, res_data = _post_json(session, REGISTER_URL, register_payload, retries=2)
+    _, res_data = _post_json(session, REGISTER_URL, register_payload, retries=2)
     if not res_data:
         STATS["error"] += 1
         log.error(
@@ -793,6 +806,7 @@ def reg(
     #         pass
 
     auth_token = res_data.get("token")
+
     if not auth_token:
         STATS["error"] += 1
         log.error(
@@ -903,6 +917,11 @@ def reg(
         session.headers.update({"authorization": auth_token})
 
     _clear_captcha_headers(session)
+
+    log.info(
+        f"Email verified & bound {Beach.FOAM}→{Style.RESET_ALL} "
+        f"{Beach.PALM}{email}{Style.RESET_ALL}"
+    )
 
     if do_phone:
         try:

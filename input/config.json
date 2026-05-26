@@ -6,23 +6,8 @@
   "mail": {
     "provider": "cybertemp",
 
-    "freecustomemail": {
-      "api_key": "your_freecustomemail_api_key"
-    },
-
     "cybertemp": {
       "api_key": "your_cybertemp_api_key"
-    },
-
-    "imap": {
-      "enabled": false,
-      "host": "",
-      "port": 993,
-      "username": "",
-      "password": "",
-      "use_ssl": true,
-      "mailbox": "INBOX",
-      "domain": ""
     }
   },
 

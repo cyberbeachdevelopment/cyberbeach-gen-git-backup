@@ -172,6 +172,19 @@ def check_structure():
 check_structure()
 
 
+def get_pfp(pfp_folder):
+    if not pfp_folder.exists() or not pfp_folder.is_dir():
+        return None
+
+    images = [
+        str(p)
+        for p in pfp_folder.iterdir()
+        if p.suffix.lower() in {".png", ".jpg", ".jpeg", ".webp", ".gif"}
+    ]
+
+    return random.choice(images) if images else None
+
+
 def load_profile():
     base_path = Path("input/user")
 
@@ -200,17 +213,10 @@ def load_profile():
     status   = read_random_line(status_file)
 
     # random pfp
-    pfp = None
     try:
-        if pfp_folder.exists() and pfp_folder.is_dir():
-            images = [
-                str(p)
-                for p in pfp_folder.iterdir()
-                if p.suffix.lower() in (".png", ".jpg", ".jpeg", ".webp", ".gif")
-            ]
-            if images:
-                pfp = random.choice(images)
+        pfp = get_pfp(pfp_folder)
     except Exception as e:
+        pfp = None
         log.error(
             f"{Beach.ERROR}error={type(e).__name__}: {e}{Style.RESET_ALL}"
         )
@@ -261,9 +267,8 @@ def _has_required(sub: dict, required_fields) -> bool:
             # group
             if not any(sub.get(f) for f in field):
                 return False
-        else:
-            if not sub.get(field):
-                return False
+        elif not sub.get(field):
+            return False
     return True
 
 
@@ -360,24 +365,27 @@ def check_for_updates():
     log.info(f"Checking for updates... (Current version: {Beach.OCEAN}{CURRENT_VERSION}{Style.RESET_ALL})")
     latest_github_version = get_latest_github_version()
 
-    if latest_github_version:
-        if is_update_available(CURRENT_VERSION, latest_github_version):
-            log.info(
-                f"{Beach.WARNING}Update available! {Beach.FOAM}→{Style.RESET_ALL} "
-                f"New version: {Beach.OCEAN}{latest_github_version}{Style.RESET_ALL}\n"
-                f"{Beach.INFO}Please download the latest version from "
-                f"{Beach.SUNSET}https://github.com/{GITHUB_REPO_OWNER}/{GITHUB_REPO_NAME}/releases{Style.RESET_ALL}\n"
-                f"{Beach.INFO}Press {Beach.SUNSET}ENTER{Style.RESET_ALL} to continue with current version, or {Beach.SUNSET}CTRL+C{Style.RESET_ALL} to exit."
-            )
-            try:
-                input()
-            except KeyboardInterrupt:
-                log.info(f"{Beach.INFO}Exiting for update.{Style.RESET_ALL}")
-                sys.exit(0)
-        else:
-            log.info(f"{Beach.INFO}You are running the latest version!{Style.RESET_ALL}")
-    else:
-        log.warning(f"{Beach.WARNING}Could not check for updates. Please ensure GitHub repo details are correct and you have an internet connection.{Style.RESET_ALL}")
+    if not latest_github_version:
+        log.warning(f"{Beach.WARNING}Could not check for updates. Please ensure GitHub repo details are correct and you have an internet connection.{Style.RESET_ALL}\n")
+        return None
+
+    if not is_update_available(CURRENT_VERSION, latest_github_version):
+        log.info(f"{Beach.INFO}You are running the latest version!{Style.RESET_ALL}\n")
+        return None
+
+    log.info(
+        f"{Beach.WARNING}Update available! {Beach.FOAM}→{Style.RESET_ALL} "
+        f"New version: {Beach.OCEAN}{latest_github_version}{Style.RESET_ALL}\n"
+        f"{Beach.INFO}Please download the latest version from "
+        f"{Beach.SUNSET}https://github.com/{GITHUB_REPO_OWNER}/{GITHUB_REPO_NAME}/releases{Style.RESET_ALL}\n"
+        f"{Beach.INFO}Press {Beach.SUNSET}ENTER{Style.RESET_ALL} to continue with current version, or {Beach.SUNSET}CTRL+C{Style.RESET_ALL} to exit."
+    )
+    try:
+        input()
+    except KeyboardInterrupt:
+        log.info(f"{Beach.INFO}Exiting for update.{Style.RESET_ALL}")
+        sys.exit(0)
+
     print("\n")
 
 

@@ -62,7 +62,7 @@ class AnySolverClient:
                 timeout=30
             ).json()
 
-            if create.get("errorId") != 0:
+            if create.get("errorId", 0) != 0:
                 log.warning(
                     f"Create failed {Beach.FOAM}→{Style.RESET_ALL} "
                     f"error={Beach.CORAL}{create.get('errorCode')}{Style.RESET_ALL} "
@@ -97,7 +97,7 @@ class AnySolverClient:
 
                 # print(result)
 
-                status = result.get("status")
+                status = result.get("status", "unknown")
 
                 log.debug(
                     f"Task status {Beach.FOAM}→{Style.RESET_ALL} "
